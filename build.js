@@ -151,7 +151,14 @@ function dirsCards() {
   }).join('');
 }
 function homePage() {
-  const sits = [['Залили квартиру', 'prichiny-zaliva.html'], ['Спор с подрядчиком', 'stroitelnaya-ekspertiza.html'], ['Не согласен с экспертизой', 'recenzii.html'], ['Оспариваю кадастровую стоимость', 'kadastrovaya-stoimost.html'], ['Приёмка по госконтракту', 'goszakupki.html'], ['Наследственный спор', 'ocenochnaya-ekspertiza.html']];
+  const sits = [
+    ['Залили квартиру','prichiny-zaliva.html','M12 3c4 5 6 8 6 11a6 6 0 01-12 0c0-3 2-6 6-11z'],
+    ['Спор с подрядчиком','stroitelnaya-ekspertiza.html','M4 21V8l8-5 8 5v13M9 21v-6h6v6M4 12h16'],
+    ['Не согласен с экспертизой','recenzii.html','M6 3h9l3 3v15H6zM14 3v4h4M9 11l6 6M15 11l-6 6'],
+    ['Оспариваю кадастровую стоимость','kadastrovaya-stoimost.html','M3 20h18M5 20l3-9 4 4 3-7 4 12'],
+    ['Приёмка по госконтракту','goszakupki.html','M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6zM9 12l2 2 4-4'],
+    ['Наследственный спор','ocenochnaya-ekspertiza.html','M12 3v18M7 21h10M6 7h12M8 7l-3 6a3 3 0 006 0zM16 7l3 6a3 3 0 01-6 0z']
+  ];
   const priceRows = PRICES.slice(0, 9).map(p => `<tr data-name="${esc(p[0])}" data-group="${p[1]}"><th scope="row" data-l="Вид"><a href="${p[4]}">${p[0]}</a></th><td class="num" data-l="Стоимость">от ${money(p[2])}</td><td data-l="Срок">${p[3]} дн.</td></tr>`).join('');
   const cases = [['Арбитражный суд г. Москвы', 'А40-1234/2025', 'Март 2025', 'Спор о качестве фасадных работ на 1 240 м². Обмеры и поверочные расчёты выявили завышение объёмов.', 'Строительная'], ['Никулинский районный суд', '2-567/2025', 'Февраль 2025', 'Оспаривание подписи в договоре займа на 4,5 млн ₽ по почерковедческому исследованию.', 'Криминалистическая'], ['Краснодарский краевой суд', 'А32-890/2025', 'Январь 2025', 'Реконструкция обстоятельств ДТП по следам и повреждениям при противоречивых показаниях.', 'Транспорт']];
   const main = `
@@ -180,7 +187,7 @@ function homePage() {
 
 <section class="sec sec--dark"><div class="wrap">
   <div class="sec-head"><span class="eyebrow">С чего начать</span><h2>Типовые ситуации</h2></div>
-  <div class="sits">${sits.map(s => `<a class="sit" href="${s[1]}">${s[0]}</a>`).join('')}</div>
+  <div class="sits">${sits.map(s => `<a class="sit" href="${s[1]}"><span class="sit__ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="${s[2]}"/></svg></span><span class="sit__t">${s[0]}</span><span class="sit__ar">→</span></a>`).join('')}</div>
 </div></section>
 
 <section class="sec"><div class="wrap">
