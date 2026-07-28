@@ -5,9 +5,16 @@
   var $$ = function (s, c) { return Array.prototype.slice.call((c || document).querySelectorAll(s)); };
   function esc(t){var d=document.createElement('div');d.textContent=t;return d.innerHTML;}
 
-  /* ---- Sticky header shrink ---- */
+  /* ---- Sticky header: сжатие с гистерезисом (без дёрганья на пороге) ---- */
   var hdr = $('.hdr');
-  if (hdr) window.addEventListener('scroll', function () { hdr.classList.toggle('shrink', window.scrollY > 120); }, { passive: true });
+  if (hdr) {
+    var shrunk = false;
+    window.addEventListener('scroll', function () {
+      var y = window.pageYOffset || document.documentElement.scrollTop || 0;
+      if (!shrunk && y > 170) { shrunk = true; hdr.classList.add('shrink'); }
+      else if (shrunk && y < 60) { shrunk = false; hdr.classList.remove('shrink'); }
+    }, { passive: true });
+  }
 
   /* ---- Мегаменю «Экспертизы» ---- */
   var megaBtn = $('#mega-btn'), mega = $('#mega');
@@ -376,18 +383,27 @@
   (function(){
     if(document.getElementById('bento-style')) return;
     var st=document.createElement('style'); st.id='bento-style';
+    var EASE='cubic-bezier(.16,1,.3,1)'; // expo-out — «дорогая» плавность 2026, без пружин/подскоков
     st.textContent=
-      '.dir,.card,.sit,.media-card,.city-block,.case,.expert{will-change:transform}'
-      +'.dir:hover,.card:hover,.media-card:hover,.city-block:hover{transform:translateY(-5px) scale(1.012)}'
-      +'.dir__ic,.card__ic,.sit__ic{transition:transform .28s cubic-bezier(.2,.8,.2,1)}'
-      +'.dir:hover .dir__ic,.card:hover .card__ic,.sit:hover .sit__ic{transform:scale(1.12) rotate(-4deg)}'
-      +'.ic{overflow:visible}'
-      +'.sit:hover .sit__ar,.card:hover .card__meta .a,.arrow:hover .a,.dir:hover .arrow .a{color:#E5484D}'
+      // hover: только деликатный подъём + тень/рамка (без scale, без вращений иконок)
+      '.dir,.card,.sit,.media-card,.city-block,.case{transition:transform .4s '+EASE+',box-shadow .4s '+EASE+',border-color .3s ease}'
+      +'.dir:hover,.card:hover,.media-card:hover,.city-block:hover{transform:translateY(-4px)}'
+      +'.dir__ic,.card__ic,.sit__ic{transition:transform .4s '+EASE+'}'
+      +'.dir:hover .dir__ic,.card:hover .card__ic,.sit:hover .sit__ic{transform:translateY(-2px)}'
+      // тактильный отклик кнопок
+      +'.btn{transition:transform .12s ease,background .16s ease,color .16s ease,border-color .16s ease,box-shadow .16s ease}'
+      +'.btn:active{transform:scale(.975)}'
+      +'.sit:hover .sit__ar,.card:hover .card__meta .a,.arrow:hover .a{color:#E5484D}'
+      // красный акцент-«засечка» у надзаголовков
       +'.eyebrow::before{content:"";display:inline-block;width:20px;height:2px;background:#D64550;border-radius:2px;margin-right:8px;vertical-align:middle}'
       +'.sec--dark .eyebrow::before{background:#FF6B6B}'
-      +'.reveal{opacity:0;transform:translateY(22px);transition:opacity .6s cubic-bezier(.2,.7,.2,1),transform .6s cubic-bezier(.2,.7,.2,1)}'
-      +'.reveal.in{opacity:1;transform:none}'
-      +'@media (prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}}';
+      // reveal: мягкое проявление с лёгким blur-in, короткий сдвиг — сдержанно
+      +'.reveal{opacity:0;transform:translateY(14px);filter:blur(6px);transition:opacity .7s '+EASE+',transform .7s '+EASE+',filter .7s '+EASE+'}'
+      +'.reveal.in{opacity:1;transform:none;filter:none}'
+      // шапка: верхняя плашка сворачивается плавно (без прыжка лейаута → без дёрганья)
+      +'.hdr-util{overflow:hidden;max-height:64px;transition:max-height .4s '+EASE+',opacity .3s ease}'
+      +'.hdr.shrink .hdr-util{display:block;max-height:0;opacity:0;pointer-events:none}'
+      +'@media (prefers-reduced-motion:reduce){.reveal,.dir,.card,.sit,.media-card,.city-block{transition:none}.reveal{opacity:1;transform:none;filter:none}}';
     document.head.appendChild(st);
   })();
 
@@ -396,10 +412,13 @@
     var io = new IntersectionObserver(function (entries) {
       entries.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
     }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
-    $$('main > section').forEach(function (s, i) { if (i >= 1) { s.classList.add('reveal'); io.observe(s); } });
-    // каскадное появление карточек внутри сеток
-    $$('.dirs > *, .cards > *, .sits > *, .grid-3 > *, .grid-2 > *, .experts > *, .steps > *, .docs > *, .theses > *').forEach(function (el, i) {
-      el.classList.add('reveal'); el.style.transitionDelay = ((i % 6) * 55) + 'ms'; io.observe(el);
+    // проявляем только то, что НИЖЕ сгиба (без вспышки контента над сгибом)
+    var vh = window.innerHeight || 800;
+    function reveal(el, delay){ if(!el || el.getBoundingClientRect().top < vh - 60) return; el.classList.add('reveal'); if(delay) el.style.transitionDelay = delay + 'ms'; io.observe(el); }
+    $$('.sec-head, .answer, .price-block, .cta, .tbl-wrap, .media-card, .case, .contact-grid > *').forEach(function (el) { reveal(el, 0); });
+    // деликатный каскад внутри сеток (задержка сбрасывается на каждой сетке, максимум 200 мс)
+    $$('.dirs, .cards, .sits, .grid-2, .grid-3, .experts, .steps').forEach(function (grid) {
+      Array.prototype.forEach.call(grid.children, function (ch, i) { reveal(ch, Math.min(i * 50, 200)); });
     });
     // счётчики статистики (count-up)
     var countUp = function (el) {
