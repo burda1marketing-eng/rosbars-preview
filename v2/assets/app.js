@@ -300,24 +300,32 @@
   }
   buildHelper();
 
-  /* ---- Переключатель дизайна (сравнение двух версий прототипа) ---- */
+  /* ---- Переключатель дизайна (сравнение трёх версий прототипа) ---- */
   (function(){
     try{
-      var isV2 = /(^|\/)v2\//.test(location.pathname);
-      var file = location.pathname.split('/').pop() || 'index.html';
-      var a = document.createElement('a');
-      a.href = (isV2 ? '../' : 'v2/') + file;
-      a.setAttribute('aria-label','Переключить дизайн прототипа');
-      a.setAttribute('title', isV2 ? 'Открыть классический дизайн' : 'Открыть дизайн в стиле monday.com');
-      var bg = isV2 ? '#112250' : '#6161ff';
-      a.style.cssText = 'position:fixed;left:16px;bottom:20px;z-index:120;display:inline-flex;align-items:center;gap:8px;height:42px;padding:0 18px 0 15px;border-radius:999px;background:'+bg+';color:#fff;font:600 13px/1 Inter,ui-sans-serif,system-ui,sans-serif;letter-spacing:.01em;text-decoration:none;box-shadow:0 8px 28px rgba(17,34,80,.28);border:1px solid rgba(255,255,255,.2)';
-      var ic=document.createElement('span'); ic.textContent='⇄'; ic.style.cssText='font-size:15px;opacity:.9';
-      var tx=document.createElement('span'); a.appendChild(ic); a.appendChild(tx);
-      var full = isV2 ? 'Дизайн 1 · классический' : 'Дизайн 2 · monday';
-      var shortL = isV2 ? 'Дизайн 1' : 'Дизайн 2';
-      function fit(){ tx.textContent = window.innerWidth <= 560 ? shortL : full; }
-      fit(); window.addEventListener('resize', fit, { passive:true });
-      document.body.appendChild(a);
+      var p = location.pathname;
+      var isV2 = /(^|\/)v2\//.test(p), isV3 = /(^|\/)v3\//.test(p);
+      var cur = isV2 ? 2 : (isV3 ? 3 : 1);
+      var base = (isV2 || isV3) ? '../' : '';
+      var file = p.split('/').pop() || 'index.html';
+      var targets = [ cur===1?file:base+file, cur===2?file:base+'v2/'+file, cur===3?file:base+'v3/'+file ];
+      var names = ['Классический','monday.com','Light blue'];
+      var wrap = document.createElement('div');
+      wrap.setAttribute('aria-label','Переключатель дизайна прототипа');
+      wrap.style.cssText='position:fixed;left:16px;bottom:20px;z-index:120;display:inline-flex;align-items:center;gap:4px;background:#fff;border:1px solid #d9dee6;border-radius:999px;padding:5px 7px 5px 13px;box-shadow:0 8px 28px rgba(6,36,59,.18);font:600 12px/1 -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif';
+      var lbl=document.createElement('span'); lbl.textContent='Дизайн'; lbl.style.cssText='color:#6B7280;margin-right:5px;letter-spacing:.02em';
+      wrap.appendChild(lbl);
+      [1,2,3].forEach(function(n,i){
+        var cu = (n===cur);
+        var el = cu ? document.createElement('span') : document.createElement('a');
+        if(!cu){ el.href = targets[i]; }
+        el.textContent = n;
+        el.title = 'Дизайн '+n+' · '+names[i];
+        el.style.cssText='display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;text-decoration:none;transition:background .15s;'+(cu?'background:#06243B;color:#fff;':'color:#1A1A1A;background:#F1F4F8;');
+        if(!cu){ el.onmouseenter=function(){el.style.background='#E2E8F0';}; el.onmouseleave=function(){el.style.background='#F1F4F8';}; }
+        wrap.appendChild(el);
+      });
+      document.body.appendChild(wrap);
     }catch(e){}
   })();
 

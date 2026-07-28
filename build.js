@@ -8,6 +8,9 @@ let CONTENT = {}; try { CONTENT = JSON.parse(fs.readFileSync(OUT + '/services-co
 
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const money = n => n.toLocaleString('ru-RU').replace(/,/g, ' ') + ' ₽';
+// Убираем ценовые предложения из прозы: цена остаётся только на /stoimost и в блоке цены внизу услуги.
+// Удаляем целые предложения, где есть «₽». Сокращения (ст., п., г., т.д.…) защищаем, чтобы не рвать предложение.
+const stripPrice = require('./strip.js');
 const li = a => a.map(x => '<li>' + x + '</li>').join('');
 const PROTO = 'Прототип. Демонстрационная версия, не является действующим сайтом';
 
@@ -147,7 +150,7 @@ ${modalHTML()}
 function dirsCards() {
   return GROUPS.slice(0, 9).map((g, i) => {
     const ex = g.items.slice(0, 3).map(n => `<a href="${svcHref(n, g.slug)}">${n}</a>`).join('');
-    return `<article class="dir${i === 0 ? ' dir--wide' : ''}"><div class="dir__ic">${ic(g.ic, 28)}</div><h3><a href="${g.slug}.html">${g.name}</a></h3><div class="dir__count">${g.items.length} видов · от ${money(g.from)}</div><div class="dir__ex">${ex}</div></article>`;
+    return `<article class="dir${i === 0 ? ' dir--wide' : ''}"><div class="dir__ic">${ic(g.ic, 28)}</div><h3><a href="${g.slug}.html">${g.name}</a></h3><div class="dir__count">${g.items.length} видов</div><div class="dir__ex">${ex}</div></article>`;
   }).join('');
 }
 function homePage() {
@@ -236,7 +239,7 @@ function ekspertizyPage() {
   const main = `
 <section class="sec"><div class="wrap">
   <div class="prose narrow"><h1>Виды экспертиз</h1>
-  <div class="answer mt-4">Центр проводит судебные и досудебные экспертизы по 11 направлениям и более чем 60 видам. Выберите нужный вид ниже или воспользуйтесь поиском. На каждой странице — прямой ответ по сути, цена «от», сроки и порядок работы.</div></div>
+  <div class="answer mt-4">Центр проводит судебные и досудебные экспертизы по 11 направлениям и более чем 60 видам. Выберите нужный вид ниже или воспользуйтесь поиском. На каждой странице — прямой ответ по сути, сроки и порядок работы.</div></div>
   <div style="display:grid;grid-template-columns:260px 1fr;gap:40px;margin-top:32px" class="ek-layout">
     <aside class="aside"><input id="type-search" type="search" placeholder="Поиск по видам…" style="width:100%;height:44px;border:1px solid var(--shellstone);border-radius:4px;padding:0 14px;margin-bottom:16px">
       <nav class="ek-toc" style="display:flex;flex-direction:column;gap:4px;font-size:14px">${toc}</nav></aside>
@@ -249,13 +252,13 @@ function ekspertizyPage() {
 /* Пиллар группы */
 function pillarPage(g) {
   const trail = [{ t: 'Главная', href: 'index.html' }, { t: 'Экспертизы', href: 'ekspertizy.html' }, { t: g.name.split(' —')[0] }];
-  const cards = g.items.map(n => `<a class="card" href="${svcHref(n, g.slug)}" style="text-decoration:none"><h4>${n}</h4><div class="card__meta"><span>от ${money(g.from)}</span><span class="a">Подробнее →</span></div></a>`).join('');
+  const cards = g.items.map(n => `<a class="card" href="${svcHref(n, g.slug)}" style="text-decoration:none"><h4>${n}</h4><div class="card__meta"><span class="a">Подробнее →</span></div></a>`).join('');
   const faqSub = pickFaq(g.name, 6);
   const main = `
 <section class="sec"><div class="wrap"><div class="layout">
   <div>
     <h1>${g.name}</h1>
-    <div class="answer mt-4">${g.name} решает споры и задачи, где нужны специальные знания: ${g.desc.toLowerCase()} Проводим досудебные исследования и судебные экспертизы, готовим заключение по 73-ФЗ, пригодное для суда. Стоимость — от ${money(g.from)}, срок обычно от 5 рабочих дней. Точную цену эксперт называет после изучения материалов.</div>
+    <div class="answer mt-4">${g.name} решает споры и задачи, где нужны специальные знания: ${g.desc.toLowerCase()} Проводим досудебные исследования и судебные экспертизы, готовим заключение по 73-ФЗ, пригодное для суда. Срок — обычно от 5 рабочих дней. Точную стоимость эксперт называет после изучения материалов и фиксирует в договоре.</div>
     <div class="prose mt-8">
       <h2>Виды в этой группе</h2>
     </div>
@@ -274,8 +277,7 @@ function pillarPage(g) {
   return shell({ file: g.slug + '.html', title: `${g.name} — цена и сроки | ${SITE.name}`, desc: `${g.name}: ${g.desc} Досудебно и для суда, от ${money(g.from)}. Заключение для суда, Москва и Краснодар.`, active: 'ekspertizy.html', trail, main });
 }
 function asidePanels(from) {
-  return `<div class="plate"><div class="plate__price">от ${money(from)}</div><div class="plate__meta">срок от 5 рабочих дней · заключение эксперта, 2 экз.</div>${priceStar()}</div>
-    <div class="panel"><a class="btn btn--primary" style="width:100%" href="zayavka.html?scenario=sud">Рассчитать стоимость</a></div>
+  return `<div class="panel"><a class="btn btn--primary" style="width:100%" href="zayavka.html?scenario=sud">Рассчитать стоимость</a></div>
     <div class="panel panel--dark"><h4>Бесплатная консультация</h4><p>Эксперт подскажет вид экспертизы и вопросы.</p><a class="btn btn--ondark" style="width:100%;margin-top:12px" href="tel:${SITE.phoneRaw}">${SITE.phone}</a></div>`;
 }
 
@@ -314,15 +316,14 @@ function zalivPage() {
     ${faqAccordion(faqSub)}
     <div class="panel mt-6" style="border-left:3px solid var(--seal-blue)"><b>Не согласны с чужим заключением по заливу?</b><p class="muted" style="margin-top:6px">Подготовим рецензию с разбором методических нарушений.</p><a class="arrow mt-4" href="recenzii.html">Заказать рецензию <span class="a">→</span></a></div>
     <h2 class="mt-8">Смежные виды</h2>
-    <div class="cards">${['Ущерб от залива','Инженерных систем и сетей','Установление виновника залива'].map(n=>`<a class="card" href="stroitelnaya-ekspertiza.html"><h4>${n}</h4><div class="card__meta"><span>от 8 000 ₽</span><span class="a">→</span></div></a>`).join('')}</div>
+    <div class="cards">${['Ущерб от залива','Инженерных систем и сетей','Установление виновника залива'].map(n=>`<a class="card" href="stroitelnaya-ekspertiza.html"><h4>${n}</h4><div class="card__meta"><span class="a">→</span></div></a>`).join('')}</div>
     <p class="caption muted mt-8">Обновлено: июль 2026</p>
   </div>
   <aside class="aside">
-    <div class="plate"><div class="plate__price">от 25 000 ₽</div><div class="plate__meta">от 5 рабочих дней · заключение эксперта, 2 экз.</div>${priceStar()}</div>
     <div class="panel"><a class="btn btn--primary" style="width:100%" href="zayavka.html?scenario=sud&vid=${encodeURIComponent('Экспертиза причин залива')}">Оставить заявку</a></div>
     <div class="panel panel--dark"><h4>Бесплатная консультация</h4><p>Поможем сформулировать вопросы для суда.</p><a class="btn btn--ondark" style="width:100%;margin-top:12px" href="tel:${SITE.phoneRaw}">${SITE.phone}</a></div>
   </aside>
-</div></div></section>${ctaBand()}`;
+</div></div></section>${priceBlock(25000, 'от 5 рабочих дней', 'Экспертиза причин залива')}${ctaBand()}`;
   return shell({ file: 'prichiny-zaliva.html', title: `Экспертиза причин залива квартиры — цена от 25 000 ₽ | ${SITE.name}`, desc: 'Экспертиза причин залива: установление источника протечки и виновного лица. Досудебно и для суда, от 25 000 ₽, от 5 рабочих дней. Заключение для суда.', active: 'ekspertizy.html', trail, main });
 }
 
@@ -333,7 +334,7 @@ function servicePage(o) {
 <section class="sec"><div class="wrap"><div class="layout">
   <div>
     <h1>${o.h1}</h1>
-    <div class="answer mt-4">${o.answer}</div>
+    <div class="answer mt-4">${stripPrice(o.answer)}</div>
     <div class="prose mt-8">
       <h2>Когда назначается</h2><ul>${li(o.when)}</ul>
       <h2>Вопросы эксперту</h2><ul>${li(o.q)}</ul>
@@ -344,17 +345,16 @@ function servicePage(o) {
     <div class="cards">${o.related.map(r=>`<a class="card" href="${r[1]}"><h4>${r[0]}</h4><div class="card__meta"><span class="a">Подробнее →</span></div></a>`).join('')}</div>
   </div>
   <aside class="aside">
-    <div class="plate"><div class="plate__price">от ${money(o.from)}</div><div class="plate__meta">${o.term} · заключение эксперта</div>${priceStar()}</div>
     <div class="panel"><a class="btn btn--primary" style="width:100%" href="zayavka.html?scenario=sud&vid=${encodeURIComponent(o.h1)}">Оставить заявку</a></div>
     <div class="panel panel--dark"><h4>Консультация бесплатна</h4><a class="btn btn--ondark" style="width:100%;margin-top:12px" href="tel:${SITE.phoneRaw}">${SITE.phone}</a></div>
   </aside>
-</div></div></section>${ctaBand()}`;
+</div></div></section>${priceBlock(o.from, o.term, o.h1)}${ctaBand()}`;
   return shell({ file: o.file, title: `${o.h1} — цена и сроки | ${SITE.name}`, desc: o.desc, active: 'ekspertizy.html', trail, main });
 }
 
 /* FAQ helpers */
 function faqAccordion(items) {
-  return `<div class="faq">${items.map(f => `<details><summary>${esc(f.q)}</summary><div class="a">${esc(f.a)}</div></details>`).join('')}</div>`;
+  return `<div class="faq">${items.map(f => `<details><summary>${esc(f.q)}</summary><div class="a">${esc(stripPrice(f.a))}</div></details>`).join('')}</div>`;
 }
 function pickFaq(topicHint, n) {
   let pool = [];
@@ -408,7 +408,7 @@ function goszakupkiPage() {
   <div class="cards mt-4"><div class="panel"><h4>44-ФЗ</h4><p class="muted mt-4">Контрактная система для государственных и муниципальных нужд: приёмка, объёмы, качество, обоснование отказа.</p></div><div class="panel"><h4>223-ФЗ</h4><p class="muted mt-4">Закупки отдельных видов юрлиц: соответствие результата условиям договора и техническому заданию.</p></div></div>
   <div class="prose mt-8"><h2>Для заказчика</h2><ul>${li(['Обоснование отказа в приёмке','Проверка объёмов и качества по контракту','Экспертиза НМЦК'])}</ul><h2>Для поставщика</h2><ul>${li(['Подтверждение выполненных работ','Оспаривание необоснованного отказа в приёмке','Сопровождение спора с заказчиком'])}</ul></div>
   <h2 class="mt-8">Частые вопросы</h2>${faqAccordion(faqSub)}
-  </div><aside class="aside">${asidePanels(35000)}</aside></div></div></section>${ctaBand()}`;
+  </div><aside class="aside">${asidePanels(35000)}</aside></div></div></section>${priceBlock(35000, 'срок от 5 рабочих дней', 'Экспертиза по госзакупкам (44-ФЗ и 223-ФЗ)')}${ctaBand()}`;
   return shell({ file: 'goszakupki.html', title: `Экспертиза госзакупок 44-ФЗ и 223-ФЗ | ${SITE.name}`, desc: 'Экспертиза исполнения госконтракта по 44-ФЗ и 223-ФЗ: объёмы и качество работ, приёмка и обоснование отказа, НМЦК. Для заказчиков и поставщиков.', active: 'goszakupki.html', trail, main });
 }
 
@@ -420,17 +420,16 @@ function recenziiPage() {
   const main = `
 <section class="sec"><div class="wrap"><div class="layout"><div>
   <h1>Рецензия на заключение эксперта</h1>
-  <div class="answer mt-4">Рецензия — это исследование чужого заключения на предмет методических и процессуальных нарушений. Эксперт проверяет применённые методики, полноту исследования, обоснованность выводов и соответствие требованиям 73-ФЗ. Рецензия помогает оспорить экспертизу оппонента, заявить ходатайство о повторной или дополнительной экспертизе и обосновать сомнения перед судом. Стоимость — от 15 000 ₽, срок 3–7 рабочих дней.</div>
+  <div class="answer mt-4">Рецензия — это исследование чужого заключения на предмет методических и процессуальных нарушений. Эксперт проверяет применённые методики, полноту исследования, обоснованность выводов и соответствие требованиям 73-ФЗ. Рецензия помогает оспорить экспертизу оппонента, заявить ходатайство о повторной или дополнительной экспертизе и обосновать сомнения перед судом. Срок — 3–7 рабочих дней, точную стоимость эксперт называет после изучения заключения.</div>
   <div class="prose mt-8"><h2>Когда рецензия помогает</h2><ul>${li(['Выводы эксперта противоречат материалам дела','Нарушена методика исследования','Эксперт вышел за пределы своей компетенции','Использованы неактуальные нормы','Не исследованы значимые обстоятельства'])}</ul>
   <h2>Типовые методические нарушения</h2><ul>${li(['Отсутствие описания примененной методики','Необоснованные допущения в расчётах','Игнорирование части исходных данных','Логические разрывы между исследованием и выводами'])}</ul></div>
   <h2 class="mt-8">Рецензии по видам</h2>
-  <div class="cards mt-4">${kinds.map(k=>`<a class="card" href="${k[1]}"><h4>${k[0]}</h4><div class="card__meta"><span>от 15 000 ₽</span><span class="a">→</span></div></a>`).join('')}</div>
+  <div class="cards mt-4">${kinds.map(k=>`<a class="card" href="${k[1]}"><h4>${k[0]}</h4><div class="card__meta"><span class="a">→</span></div></a>`).join('')}</div>
   <h2 class="mt-8">Частые вопросы</h2>${faqAccordion(faqSub)}
   </div><aside class="aside">
-    <div class="plate"><div class="plate__price">от 15 000 ₽</div><div class="plate__meta">3–7 рабочих дней</div>${priceStar()}</div>
     <div class="panel"><a class="btn btn--primary" style="width:100%" href="zayavka.html?scenario=recenz">Заявка на рецензию</a></div>
     <div class="panel panel--dark"><h4>Консультация бесплатна</h4><a class="btn btn--ondark" style="width:100%;margin-top:12px" href="tel:${SITE.phoneRaw}">${SITE.phone}</a></div>
-  </aside></div></div></section>${ctaBand()}`;
+  </aside></div></div></section>${priceBlock(15000, 'срок 3–7 рабочих дней', 'Рецензия на заключение эксперта')}${ctaBand()}`;
   return shell({ file: 'recenzii.html', title: `Рецензия на заключение эксперта — оспорить экспертизу | ${SITE.name}`, desc: 'Рецензия на заключение эксперта: разбор методических нарушений для оспаривания экспертизы в суде. От 15 000 ₽, срок 3–7 дней.', active: 'recenzii.html', trail, main });
 }
 
@@ -553,9 +552,9 @@ const INDUSTRIES = [
 function industryPage(ind) {
   const trail = [{ t: 'Главная', href: 'index.html' }, { t: 'Отрасли', href: 'otrasli.html' }, { t: ind.name }];
   const cards = ind.groups.map(slug => {
-    if (slug === 'goszakupki') return `<a class="card" href="goszakupki.html"><div class="card__ic">${ic('shield', 28)}</div><h4>Экспертиза госзакупок</h4><p>Исполнение контракта по 44-ФЗ и 223-ФЗ, объёмы и качество, приёмка, НМЦК.</p><div class="card__meta"><span>от 35 000 ₽</span><span class="a">Подробнее →</span></div></a>`;
+    if (slug === 'goszakupki') return `<a class="card" href="goszakupki.html"><div class="card__ic">${ic('shield', 28)}</div><h4>Экспертиза госзакупок</h4><p>Исполнение контракта по 44-ФЗ и 223-ФЗ, объёмы и качество, приёмка, НМЦК.</p><div class="card__meta"><span class="a">Подробнее →</span></div></a>`;
     const g = GROUPS.find(x => x.slug === slug); if (!g) return '';
-    return `<a class="card" href="${g.slug}.html"><div class="card__ic">${ic(g.ic, 28)}</div><h4>${g.name}</h4><p>${g.desc}</p><div class="card__meta"><span>от ${money(g.from)}</span><span class="a">Подробнее →</span></div></a>`;
+    return `<a class="card" href="${g.slug}.html"><div class="card__ic">${ic(g.ic, 28)}</div><h4>${g.name}</h4><p>${g.desc}</p><div class="card__meta"><span class="a">Подробнее →</span></div></a>`;
   }).join('');
   const main = `<section class="sec"><div class="wrap"><div class="prose narrow">
     <h1>Экспертиза для отрасли «${ind.name}»</h1>
@@ -579,7 +578,7 @@ function faqPage() {
   const trail = [{ t: 'Главная', href: 'index.html' }, { t: 'Частые вопросы' }];
   const total = FAQ.reduce((n, g) => n + g.items.length, 0);
   const nav = FAQ.map((g, i) => `<a href="#f${i}">${g.label}</a>`).join('');
-  const blocks = FAQ.map((g, i) => `<div id="f${i}" data-search-group style="margin-bottom:32px"><h2>${g.label}</h2><div class="faq mt-4">${g.items.map(f => `<details data-search-item data-name="${esc(f.q)}"><summary>${esc(f.q)}</summary><div class="a">${esc(f.a)}</div></details>`).join('')}</div></div>`).join('');
+  const blocks = FAQ.map((g, i) => `<div id="f${i}" data-search-group style="margin-bottom:32px"><h2>${g.label}</h2><div class="faq mt-4">${g.items.map(f => `<details data-search-item data-name="${esc(f.q)}"><summary>${esc(f.q)}</summary><div class="a">${esc(stripPrice(f.a))}</div></details>`).join('')}</div></div>`).join('');
   const main = `<section class="sec"><div class="wrap"><div class="prose narrow"><h1>Частые вопросы</h1><p class="lead mt-4">${total} вопросов и ответов по видам экспертиз, стоимости, срокам и судебному процессу. Тот же материал использует виджет-помощник.</p></div>
   <div style="display:grid;grid-template-columns:240px 1fr;gap:40px;margin-top:32px" class="ek-layout">
     <aside class="aside"><input id="type-search" type="search" placeholder="Поиск по вопросам…" style="width:100%;height:44px;border:1px solid var(--shellstone);border-radius:4px;padding:0 14px;margin-bottom:16px"><nav style="display:flex;flex-direction:column;gap:4px;font-size:14px">${nav}</nav></aside>
@@ -630,7 +629,7 @@ function servicePageFromContent(svc) {
   const groupName = svc.groupName.split(' —')[0].split(' и консалтинг')[0];
   const trail = [{ t:'Главная', href:'index.html' }, { t:'Экспертизы', href:'ekspertizy.html' }, { t:groupName, href:svc.groupSlug+'.html' }, { t:svc.name }];
   const h1 = c.h1 || svc.name;
-  const answer = c.answer || (`${svc.groupName} — направление «${svc.name.toLowerCase()}». Проводим досудебные исследования и судебные экспертизы, готовим заключение по 73-ФЗ, пригодное для суда. Стоимость — от ${money(svc.from)}, точную цену эксперт называет после изучения материалов.`);
+  const answer = stripPrice(c.answer || (`${svc.groupName} — направление «${svc.name.toLowerCase()}». Проводим досудебные исследования и судебные экспертизы, готовим заключение по 73-ФЗ, пригодное для суда. Точную стоимость эксперт называет после изучения материалов и фиксирует в договоре.`));
   const when = (c.when && c.when.length) ? c.when : ['Досудебное обоснование претензии или иска','Назначение судом по ходатайству стороны','Спор со страховой, подрядчиком или контрагентом','Оценка ущерба и его размера'];
   const norms = (c.norms && c.norms.length) ? c.norms : ['73-ФЗ «О государственной судебно-экспертной деятельности»','ст. 307 УК РФ (ответственность эксперта)'];
   const faq = (c.faq && c.faq.length) ? c.faq : [];
@@ -710,14 +709,25 @@ const seen = {};
 PAGES.forEach(p => { if (seen[p.f]) return; seen[p.f] = 1; fs.writeFileSync(path.join(OUT, p.f), p.h, 'utf8'); });
 console.log('Собрано страниц (Дизайн 1, классический): ' + Object.keys(seen).length);
 
-/* ---------- Дизайн 2: /v2/ — стиль monday.com, ТОТ ЖЕ контент ----------
-   Все внутренние ссылки относительные (assets/…, *.html), поэтому полная копия
-   в подпапке /v2/ работает как самостоятельный сайт. Отличается только таблица
-   стилей: в /v2/assets/styles.css кладём monday-тему. */
-const V2 = path.join(OUT, 'v2');
-fs.mkdirSync(V2, { recursive: true });
-const seenV2 = {};
-PAGES.forEach(p => { if (seenV2[p.f]) return; seenV2[p.f] = 1; fs.writeFileSync(path.join(V2, p.f), p.h, 'utf8'); });
-fs.cpSync(path.join(OUT, 'assets'), path.join(V2, 'assets'), { recursive: true });
-fs.copyFileSync(path.join(OUT, 'assets', 'styles-monday.css'), path.join(V2, 'assets', 'styles.css'));
-console.log('Собрано страниц (Дизайн 2, monday, /v2/): ' + Object.keys(seenV2).length);
+// Данные помощника (клиентский поиск по FAQ) — со снятыми ценами, как и на страницах
+try {
+  const flat = [];
+  FAQ.forEach(g => (g.items || []).forEach(it => flat.push({ q: it.q, a: stripPrice(it.a), t: g.label })));
+  fs.writeFileSync(path.join(OUT, 'assets', 'faq-data.js'), 'window.FAQ=' + JSON.stringify(flat) + ';', 'utf8');
+  console.log('Помощник: обновлён assets/faq-data.js (' + flat.length + ' Q&A, цены сняты)');
+} catch (e) { console.log('faq-data.js: ' + e.message); }
+
+/* ---------- Доп. версии дизайна: /v2/ (monday) и /v3/ (light-blue), ТОТ ЖЕ контент ----------
+   Все внутренние ссылки относительные (assets/…, *.html), поэтому полная копия в подпапке
+   работает как самостоятельный сайт. Отличается только /vN/assets/styles.css (тема). */
+function buildVariant(dir, themeFile, label){
+  const V = path.join(OUT, dir);
+  fs.mkdirSync(V, { recursive: true });
+  const seenV = {};
+  PAGES.forEach(p => { if (seenV[p.f]) return; seenV[p.f] = 1; fs.writeFileSync(path.join(V, p.f), p.h, 'utf8'); });
+  fs.cpSync(path.join(OUT, 'assets'), path.join(V, 'assets'), { recursive: true });
+  fs.copyFileSync(path.join(OUT, 'assets', themeFile), path.join(V, 'assets', 'styles.css'));
+  console.log('Собрано страниц (' + label + ', /' + dir + '/): ' + Object.keys(seenV).length);
+}
+buildVariant('v2', 'styles-monday.css', 'Дизайн 2, monday');
+buildVariant('v3', 'styles-lightblue.css', 'Дизайн 3, light-blue');
