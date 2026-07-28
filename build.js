@@ -705,7 +705,19 @@ SERVICES_ALL.filter(s => !s.custom).forEach(s => PAGES.push({ f: s.slug + '.html
 // удалить старые страницы прошлой сборки
 ['uslugi.html','o-tsentre.html','uslugi-stroitelnaya.html','uslugi-pocherkovedcheskaya.html','uslugi-ocenochnaya.html','uslugi-avtotehnicheskaya.html','uslugi-tovarovedcheskaya.html','uslugi-ekonomicheskaya.html','uslugi-zemleustroitelnaya.html','uslugi-pozharno-tehnicheskaya.html'].forEach(f=>{try{fs.unlinkSync(OUT+'/'+f);}catch(e){}});
 
+const path = require('path');
 const seen = {};
-PAGES.forEach(p => { if (seen[p.f]) return; seen[p.f] = 1; fs.writeFileSync(require('path').join(OUT, p.f), p.h, 'utf8'); });
-console.log('Собрано страниц: ' + Object.keys(seen).length);
-Object.keys(seen).forEach(f => console.log('  ' + f));
+PAGES.forEach(p => { if (seen[p.f]) return; seen[p.f] = 1; fs.writeFileSync(path.join(OUT, p.f), p.h, 'utf8'); });
+console.log('Собрано страниц (Дизайн 1, классический): ' + Object.keys(seen).length);
+
+/* ---------- Дизайн 2: /v2/ — стиль monday.com, ТОТ ЖЕ контент ----------
+   Все внутренние ссылки относительные (assets/…, *.html), поэтому полная копия
+   в подпапке /v2/ работает как самостоятельный сайт. Отличается только таблица
+   стилей: в /v2/assets/styles.css кладём monday-тему. */
+const V2 = path.join(OUT, 'v2');
+fs.mkdirSync(V2, { recursive: true });
+const seenV2 = {};
+PAGES.forEach(p => { if (seenV2[p.f]) return; seenV2[p.f] = 1; fs.writeFileSync(path.join(V2, p.f), p.h, 'utf8'); });
+fs.cpSync(path.join(OUT, 'assets'), path.join(V2, 'assets'), { recursive: true });
+fs.copyFileSync(path.join(OUT, 'assets', 'styles-monday.css'), path.join(V2, 'assets', 'styles.css'));
+console.log('Собрано страниц (Дизайн 2, monday, /v2/): ' + Object.keys(seenV2).length);
