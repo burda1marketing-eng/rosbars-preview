@@ -1,577 +1,588 @@
-/* ============================================================
-   Генератор статического сайта rosbars.ru (редизайн).
-   Node, без зависимостей. Запуск: node build.js
-   ============================================================ */
+/* Генератор кликабельного MVP-прототипа rosbars.ru. node build.js */
 'use strict';
 const fs = require('fs');
 const OUT = __dirname;
+const { SITE, PRICE_STAR, GROUPS, MENU, PRICES, svcHref } = require('./data.js');
+let FAQ = []; try { FAQ = JSON.parse(fs.readFileSync(OUT + '/faq.json', 'utf8')); } catch (e) {}
 
-/* ---------------- Конфиг ---------------- */
-const SITE = {
-  name: 'АНО ИЦ «Независимая Экспертиза»',
-  legal: 'Автономная некоммерческая организация «Исследовательский Центр «Независимая Экспертиза»',
-  short: 'Независимая экспертиза',
-  domain: 'rosbars.ru',
-  phoneMain: '+7 968 987-87-78', phoneMainRaw: '+79689878778',
-  phone800: '8 800 200-80-35', phone800Raw: '88002008035',
-  email: 'info@rosbars.ru',
-  addr: '119019, г. Москва, Никитский бульвар, д. 8а',
-  addrShort: 'Москва, Никитский бульвар, 8а',
-  metro: '1 минута от м. Арбатская',
-  hours: 'Пн–Сб, 09:00–19:00',
-  year: 2026
+const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const money = n => n.toLocaleString('ru-RU').replace(/,/g, ' ') + ' ₽';
+const li = a => a.map(x => '<li>' + x + '</li>').join('');
+const PROTO = 'Прототип. Демонстрационная версия, не является действующим сайтом';
+
+const ICONS = {
+  build:'M4 21V8l8-5 8 5v13M9 21v-6h6v6M4 12h16', gavel:'M14 4l6 6-3 3-6-6zM11 9l-7 7 3 3 7-7M14 20h6',
+  pen:'M4 20c3-1 5-3 9-9l2 2c-6 6-8 8-9 9zM14 6l3-3 3 3-3 3', coins:'M12 4a8 8 0 100 16 8 8 0 000-16M12 8v8M9.5 10c0-1 1-1.6 2.5-1.6s2.5.8 2.5 1.7c0 2.2-5 1.2-5 3.4 0 .9 1 1.6 2.5 1.6s2.5-.7 2.5-1.7',
+  bolt:'M13 3L5 13h6l-1 8 8-10h-6z', gear:'M12 8a4 4 0 100 8 4 4 0 000-8M12 2v3M12 19v3M4 12H1M23 12h-3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2',
+  car:'M5 16l1.5-5.5A2 2 0 018.4 9h7.2a2 2 0 011.9 1.5L19 16M3 16h18v3h-3v-3M6 19v-3', chart:'M4 20h16M6 20V11M11 20V6M16 20v-6M4 9l5-4 4 3 7-5',
+  bulb:'M9 18h6M10 21h4M8 13a5 5 0 118 0c-1 1.2-1.5 2-1.5 3h-5c0-1-.5-1.8-1.5-3', chip:'M8 8h8v8H8zM4 9v6M20 9v6M9 4h6M9 20h6M4 9h1M4 15h1M19 9h1M19 15h1',
+  plus:'M12 5v14M5 12h14', pin:'M12 21s7-6.5 7-12a7 7 0 10-14 0c0 5.5 7 12 7 12zM12 9a2 2 0 100 .01',
+  phone:'M5 4h4l2 5-3 2c1 2 3 4 5 5l2-3 5 2v4a1 1 0 01-1 1C10 20 4 14 4 5a1 1 0 011-1', mail:'M3 5h18v14H3zM3 7l9 6 9-6',
+  clock:'M12 3a9 9 0 100 18 9 9 0 000-18M12 7v5l3 2', shield:'M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6zM9 12l2 2 4-4',
+  doc:'M6 3h9l3 3v15H6zM14 3v4h4', search:'M11 4a7 7 0 100 14 7 7 0 000-14M20 20l-4-4'
 };
-const DISCLAIMER = '* Все цены носят ознакомительный характер и зависят от многих факторов.';
-const NAV = [
-  { href: 'uslugi.html', t: 'Услуги' },
-  { href: 'o-tsentre.html', t: 'О центре' },
-  { href: 'keysy.html', t: 'Кейсы' },
-  { href: 'kontakty.html', t: 'Контакты' }
-];
-const PRICE_TABLE = [
-  ['Строительно-техническая', 30000, 50000, 'uslugi-stroitelnaya.html'],
-  ['Почерковедческая', 15000, 25000, 'uslugi-pocherkovedcheskaya.html'],
-  ['Техническая экспертиза документов', 15000, 25000, null],
-  ['Экспертиза давности документа', 20000, 30000, null],
-  ['Оценочная (имущество, ущерб)', 5000, 30000, 'uslugi-ocenochnaya.html'],
-  ['Автотехническая', 15000, 25000, 'uslugi-avtotehnicheskaya.html'],
-  ['Транспортно-трасологическая', 20000, 30000, null],
-  ['Товароведческая', 15000, 25000, 'uslugi-tovarovedcheskaya.html'],
-  ['Экономическая (финансово-бухгалтерская)', 30000, 50000, 'uslugi-ekonomicheskaya.html'],
-  ['Землеустроительная', 30000, 40000, 'uslugi-zemleustroitelnaya.html'],
-  ['Пожарно-техническая', 30000, 45000, 'uslugi-pozharno-tehnicheskaya.html'],
-  ['Инженерно-техническая, электротехническая', 25000, 40000, null],
-  ['Лингвистическая', 20000, 30000, null],
-  ['Медицинская', 25000, 40000, null],
-  ['Экологическая', 40000, 60000, null],
-  ['Рецензия на заключение эксперта', 15000, 30000, null]
-];
+const ic = (k, sz) => `<svg width="${sz||24}" height="${sz||24}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="${ICONS[k]||''}"/></svg>`;
 
-/* ---------------- Утилиты ---------------- */
-function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-function money(n){return n.toLocaleString('ru-RU').replace(/,/g,' ')+' ₽';}
-function ld(obj){return '<script type="application/ld+json">'+JSON.stringify(obj)+'</script>';}
-function li(arr){return arr.map(x=>'<li>'+x+'</li>').join('');}
-
-const IC={
-build:'<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 21V8l8-5 8 5v13"/><path d="M9 21v-6h6v6"/><path d="M4 12h16"/></svg>',
-pen:'<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 20c3-1 5-3 9-9l2 2c-6 6-8 8-9 9z"/><path d="M14 6l3-3 3 3-3 3"/></svg>',
-coins:'<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="8"/><path d="M12 7v10M9.5 9.2c0-1.2 1-2 2.5-2s2.5.8 2.5 1.9c0 2.6-5 1.4-5 4 0 1.1 1 2 2.5 2s2.5-.8 2.5-2"/></svg>',
-car:'<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 16l1.5-5.5A2 2 0 018.4 9h7.2a2 2 0 011.9 1.5L19 16"/><path d="M3 16h18v3h-3v-3M6 19v-3"/><circle cx="7.5" cy="16.5" r="1"/><circle cx="16.5" cy="16.5" r="1"/></svg>',
-box:'<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3l8 4v10l-8 4-8-4V7l8-4z"/><path d="M4 7l8 4 8-4M12 11v10"/></svg>',
-chart:'<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 20h16"/><path d="M6 20V11M11 20V6M16 20v-6"/><path d="M4 9l5-4 4 3 7-5"/></svg>',
-land:'<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 20h18"/><path d="M5 20l3-9 4 4 3-7 4 12"/><circle cx="8" cy="6" r="1.5"/></svg>',
-fire:'<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3c1 3-2 4-2 7a2 2 0 004 0c0-1 0-2-.5-3 2 1 3.5 3 3.5 6a5 5 0 01-10 0c0-4 3-5 5-10z"/></svg>',
-shield:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg>',
-star:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3l2.5 5 5.5.8-4 3.9 1 5.5L12 21l-5-2.8 1-5.5-4-3.9 5.5-.8L12 3z"/></svg>',
-doc:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>',
-pin:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 21s7-6.5 7-12a7 7 0 10-14 0c0 5.5 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>',
-phone:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M5 4h4l2 5-3 2c1 2 3 4 5 5l2-3 5 2v4a1 1 0 01-1 1C10 20 4 14 4 5a1 1 0 011-1z"/></svg>',
-mail:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>',
-clock:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>'
-};
-
-/* ---------------- Шаблоны ---------------- */
-function header(active){
-  const nav = NAV.map(n=>`<a href="${n.href}"${active===n.href?' aria-current="page"':''}>${n.t}</a>`).join('');
-  const mnav = NAV.map(n=>`<a href="${n.href}">${n.t}</a>`).join('');
-  return `<header class="hdr"><div class="wrap hdr__in">
-    <a class="brand" href="index.html" aria-label="${esc(SITE.name)} — на главную">
-      <img src="assets/logo.png" width="46" height="46" alt="Печать центра «Независимая Экспертиза»">
-      <span class="brand__txt"><span class="brand__name">Независимая экспертиза</span><span class="brand__sub">Исследовательский центр</span></span>
-    </a>
-    <nav class="nav" aria-label="Основное меню">${nav}</nav>
-    <div class="hdr__cta">
-      <a class="phone" href="tel:${SITE.phone800Raw}">${SITE.phone800}<small>Звонок бесплатный</small></a>
-      <a class="btn btn--primary" href="kontakty.html">Заказать экспертизу</a>
-      <button class="burger" aria-label="Меню" aria-expanded="false"><span></span><span></span><span></span></button>
-    </div>
-  </div><nav class="mnav" aria-label="Мобильное меню">${mnav}<a href="kontakty.html">Заказать экспертизу</a></nav></header>`;
-}
-function crumbs(trail){
-  const items = trail.map((c,i)=>{
-    const last = i===trail.length-1;
-    return `<li>${last?`<span aria-current="page">${c.t}</span>`:`<a href="${c.href}">${c.t}</a>`}</li>`;
+/* ---------- Навигация ---------- */
+function megaHTML() {
+  const groupsBtns = GROUPS.map((g, i) => `<button data-g="${i}"${i === 0 ? ' class="on"' : ''}>${g.name}</button>`).join('');
+  const panels = GROUPS.map((g, i) => {
+    const links = g.items.map(name => `<a href="${svcHref(name, g.slug)}">${name}</a>`).join('');
+    return `<div class="mega__panel${i === 0 ? '' : ' hide'}" data-g="${i}"><h4><a href="${g.slug}.html">${g.name}</a></h4><div class="mega__list">${links}</div></div>`;
   }).join('');
-  return `<nav class="crumbs" aria-label="Хлебные крошки"><div class="wrap"><ol>${items}</ol></div></nav>`;
+  return `<div id="mega" class="mega"><div class="mega__in"><div class="mega__groups">${groupsBtns}</div>${panels}
+    <div class="mega__foot"><a href="ekspertizy.html">Все виды экспертиз →</a><a href="stoimost.html">Стоимость и сроки</a></div></div></div>`;
 }
-function crumbSchema(trail){
-  return ld({'@context':'https://schema.org','@type':'BreadcrumbList','itemListElement':
-    trail.map((c,i)=>({'@type':'ListItem','position':i+1,'name':c.t,'item':'https://'+SITE.domain+'/'+(c.href||'')}))});
+function header(active) {
+  const items = MENU.map(m => {
+    if (m.mega) return `<li class="${active === m.href ? 'active' : ''}"><button id="mega-btn" aria-haspopup="true" aria-expanded="false">${m.t}<i class="caret"></i></button></li>`;
+    const dd = m.sub ? `<div class="dropdown">${m.sub.map(s => `<a href="${s[1]}">${s[0]}</a>`).join('')}</div>` : '';
+    return `<li class="${active === m.href ? 'active' : ''}"><a href="${m.href}">${m.t}${m.sub ? '<i class="caret"></i>' : ''}</a>${dd}</li>`;
+  }).join('');
+  return `<header class="hdr">
+    <div class="wrap hdr__in">
+      <a class="brand" href="index.html" aria-label="${esc(SITE.name)}"><img src="assets/logo.png" width="48" height="48" alt="Печать центра"><span class="brand__txt"><span class="brand__name">Независимая экспертиза</span><span class="brand__sub">Исследовательский центр</span></span></a>
+      <nav class="menu" aria-label="Главное меню"><ul style="display:flex;gap:22px;list-style:none;margin:0;padding:0">${items}</ul></nav>
+      <div class="hdr__right">
+        <a class="hdr__phone js-city-phone" href="tel:${SITE.phoneRaw}">${SITE.phone}</a>
+        <div class="city" role="group" aria-label="Город"><button class="on" data-city="moscow">Москва</button><button data-city="krasnodar">Краснодар</button></div>
+        <a class="btn btn--ondark" href="zayavka.html">Оставить заявку</a>
+        <button class="burger" aria-label="Меню"><span></span><span></span><span></span></button>
+      </div>
+    </div>
+    ${megaHTML()}
+  </header>`;
 }
-function orgSchema(){
-  return ld({'@context':'https://schema.org','@type':'LegalService','name':SITE.legal,'alternateName':SITE.name,
-    'url':'https://'+SITE.domain,'telephone':SITE.phone800,'email':SITE.email,'image':'https://'+SITE.domain+'/assets/logo.png',
-    'priceRange':'от 5 000 ₽','address':{'@type':'PostalAddress','streetAddress':'Никитский бульвар, д. 8а','addressLocality':'Москва','postalCode':'119019','addressCountry':'RU'},
-    'openingHours':'Mo-Sa 09:00-19:00','areaServed':'RU','memberOf':'Торгово-промышленная палата г. Москвы'});
+function mmenu() {
+  const blocks = MENU.map(m => {
+    let subs = '';
+    if (m.mega) subs = GROUPS.map(g => `<a href="${g.slug}.html">${g.name}</a>`).join('');
+    else if (m.sub) subs = m.sub.map(s => `<a href="${s[1]}">${s[0]}</a>`).join('');
+    return `<details><summary>${m.t}</summary>${subs}<a href="${m.href}" style="font-weight:600;color:#fff">Все: ${m.t} →</a></details>`;
+  }).join('');
+  return `<div id="mmenu" class="mmenu"><div class="mmenu__top"><b style="font-family:var(--display)">Меню</b><button class="mmenu__close" aria-label="Закрыть">×</button></div>
+    ${blocks}
+    <div class="mmenu__cta"><a class="btn btn--ondark" style="width:100%" href="zayavka.html">Оставить заявку</a>
+    <p style="color:#c9cede;margin-top:14px;font-size:14px">${SITE.phone} · info@rosbars.ru</p></div></div>`;
 }
-function ctaBand(){
-  return `<section class="section"><div class="wrap"><div class="cta">
-    <div><h2>Нужна экспертиза?</h2><p>Опишите задачу — эксперт перезвонит, уточнит детали и оценит стоимость и срок. Консультация бесплатна.</p></div>
-    <div class="cta__act"><a class="btn btn--primary btn--lg" href="kontakty.html">Оставить заявку</a>
-    <span class="cta__phone tnum">или позвоните: ${SITE.phone800}</span></div>
-  </div></div></section>`;
-}
-function footer(){
-  const svc = PRICE_TABLE.filter(r=>r[3]).slice(0,6).map(r=>`<li><a href="${r[3]}">${r[0]}</a></li>`).join('');
+function footer() {
+  const svc = GROUPS.slice(0, 6).map(g => `<li><a href="${g.slug}.html">${g.name.split(' —')[0].split(' и ')[0]}</a></li>`).join('');
   return `<footer class="ftr"><div class="wrap"><div class="ftr__grid">
-    <div><div class="ftr__brand"><img src="assets/logo.png" width="44" height="44" alt=""><b>${esc(SITE.name)}</b></div>
-      <p>${SITE.addr}<br>${SITE.metro}<br><a href="tel:${SITE.phone800Raw}">${SITE.phone800}</a> · <a href="tel:${SITE.phoneMainRaw}">${SITE.phoneMain}</a><br>
-      <a href="mailto:${SITE.email}">${SITE.email}</a><br>${SITE.hours}</p></div>
-    <div><h5>Экспертизы</h5><ul>${svc}<li><a href="uslugi.html">Все виды и цены</a></li></ul></div>
-    <div><h5>Центр</h5><ul><li><a href="o-tsentre.html">О центре</a></li><li><a href="o-tsentre.html#certs">Лицензии и сертификаты</a></li><li><a href="keysy.html">Кейсы</a></li><li><a href="kontakty.html">Контакты</a></li></ul></div>
-    <div><h5>Контакты</h5><p>Судебные и досудебные экспертизы, лабораторные исследования.<br>Член Торгово-промышленной палаты г. Москвы.<br>Работаем по всей России.</p></div>
-  </div><div class="ftr__bot"><span>© ${SITE.year} ${esc(SITE.name)}. ${SITE.domain}</span><a href="politika.html">Политика конфиденциальности</a></div></div></footer>`;
+    <div><div class="ftr__brand"><img src="assets/logo.png" width="64" height="64" alt=""><b>${esc(SITE.name)}</b></div>
+      <p class="js-city-addr">${SITE.cities.moscow.addr}</p>
+      <p><a class="js-city-phone" href="tel:${SITE.phoneRaw}">${SITE.phone}</a> · <a href="mailto:${SITE.email}">${SITE.email}</a><br>Пн–Сб, 09:00–19:00</p></div>
+    <div><h5>Стоимость</h5><ul><li><a href="stoimost.html">Сводный прайс</a></li><li><a href="stoimost.html#zavisit">От чего зависит цена</a></li><li><a href="stoimost.html#oplata">Порядок оплаты</a></li><li><a href="zayavka.html">Рассчитать стоимость</a></li></ul></div>
+    <div><h5>Экспертизы</h5><ul>${svc}<li><a href="ekspertizy.html">Все виды →</a></li></ul></div>
+    <div><h5>Центр</h5><ul><li><a href="organizaciya.html">Об организации</a></li><li><a href="recenzii.html">Рецензии</a></li><li><a href="keysy.html">Кейсы</a></li><li><a href="faq.html">Частые вопросы</a></li><li><a href="kontakty.html">Контакты</a></li></ul></div>
+  </div>
+  <p class="ftr__note">Информация на сайте носит справочный характер и не является публичной офертой в значении ст. 437 ГК РФ. Точная стоимость и сроки определяются после изучения материалов и фиксируются в договоре.</p>
+  <div class="ftr__bot"><span>© ${SITE.year}–2026 ${esc(SITE.name)}. ${SITE.domain}</span><span><a href="politika.html">Политика конфиденциальности</a> · <a href="kontakty.html#rekvizity">Реквизиты</a> · <a href="karta-sayta.html">Карта сайта</a></span></div>
+  </div></footer>`;
 }
-function shell(o){
-  const desc = esc(o.desc||'');
-  const title = esc(o.title);
-  const head = [
-    orgSchema(),
-    o.trail ? crumbSchema(o.trail) : '',
-    o.schema || ''
-  ].join('');
-  return `<!doctype html>
-<html lang="ru">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex, follow"><!-- ПРЕВЬЮ: убрать при переносе на rosbars.ru -->
-<title>${title}</title>
-<meta name="description" content="${desc}">
-<meta property="og:title" content="${title}">
-<meta property="og:description" content="${desc}">
-<meta property="og:type" content="website">
-<meta property="og:locale" content="ru_RU">
-<link rel="canonical" href="https://${SITE.domain}/${o.file==='index.html'?'':o.file}">
+const wave = d => `<div class="wave${d ? ' wave--dark' : ''}" role="presentation"></div>`;
+function crumbs(trail) {
+  return `<div class="wrap"><nav class="crumbs" aria-label="Хлебные крошки"><ol>${trail.map((c, i) => {
+    const last = i === trail.length - 1;
+    return `<li>${last ? `<span aria-current="page">${c.t}</span>` : `<a href="${c.href}">${c.t}</a>`}</li>`;
+  }).join('')}</ol></nav></div>`;
+}
+function ctaBand() {
+  return `<section class="sec sec--dark"><div class="wrap" style="display:flex;justify-content:space-between;align-items:center;gap:32px;flex-wrap:wrap">
+    <div><h2>Нужна экспертиза или консультация?</h2><p style="margin-top:8px">Опишите задачу — эксперт перезвонит, уточнит вопросы и оценит стоимость и срок.</p></div>
+    <div style="display:flex;flex-direction:column;gap:10px"><a class="btn btn--ondark btn--lg" href="zayavka.html">Оставить заявку</a><span style="color:#c9cede" class="js-city-phone">${SITE.phone}</span></div>
+  </div></section>`;
+}
+function priceStar() { return `<p class="price-star">* ${PRICE_STAR}</p>`; }
+
+function shell(o) {
+  return `<!doctype html><html lang="ru"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>${esc(o.title)}</title>
+<meta name="description" content="${esc(o.desc || '')}">
 <link rel="icon" href="assets/logo.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=PT+Serif:wght@400;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/styles.css">
-${head}
-</head>
-<body>
-<a class="skip" href="#main">К содержанию</a>
-${header(o.active||'')}
-${o.trail?crumbs(o.trail):''}
-<main id="main">
-${o.main}
-</main>
+</head><body>
+<div class="proto">${PROTO}</div>
+${header(o.active || '')}
+${mmenu()}
+${o.trail ? crumbs(o.trail) : ''}
+<main id="main">${o.main}</main>
 ${footer()}
+<a class="skip" href="#main">К содержанию</a>
+<script src="assets/faq-data.js"></script>
 <script src="assets/app.js"></script>
-</body>
-</html>`;
+</body></html>`;
 }
 
-/* ---------------- Услуги ---------------- */
-function faqBlock(faq){
-  const html = '<div class="faq">'+faq.map(f=>`<details><summary>${f.q}</summary><div class="faq__a">${f.a}</div></details>`).join('')+'</div>';
-  const schema = ld({'@context':'https://schema.org','@type':'FAQPage','mainEntity':
-    faq.map(f=>({'@type':'Question','name':f.q,'acceptedAnswer':{'@type':'Answer','text':f.a}}))});
-  return {html,schema};
+/* ================= Экраны ================= */
+function dirsCards() {
+  return GROUPS.slice(0, 9).map((g, i) => {
+    const ex = g.items.slice(0, 3).map(n => `<a href="${svcHref(n, g.slug)}">${n}</a>`).join('');
+    return `<article class="dir${i === 0 ? ' dir--wide' : ''}"><div class="dir__ic">${ic(g.ic, 28)}</div><h3><a href="${g.slug}.html">${g.name}</a></h3><div class="dir__count">${g.items.length} видов · от ${money(g.from)}</div><div class="dir__ex">${ex}</div></article>`;
+  }).join('');
 }
-function servicePage(s){
-  const trail=[{t:'Главная',href:'index.html'},{t:'Услуги',href:'uslugi.html'},{t:s.crumb}];
-  const faq=faqBlock(s.faq);
-  const related = s.related.map(r=>{const row=PRICE_TABLE.find(p=>p[3]===r);return row?`<li><a href="${r}">${row[0].split(' (')[0]} экспертиза</a></li>`:'';}).join('');
+function homePage() {
+  const sits = [['Залили квартиру', 'prichiny-zaliva.html'], ['Спор с подрядчиком', 'stroitelnaya-ekspertiza.html'], ['Не согласен с экспертизой', 'recenzii.html'], ['Оспариваю кадастровую стоимость', 'kadastrovaya-stoimost.html'], ['Приёмка по госконтракту', 'goszakupki.html'], ['Наследственный спор', 'ocenochnaya-ekspertiza.html']];
+  const priceRows = PRICES.slice(0, 9).map(p => `<tr data-name="${esc(p[0])}" data-group="${p[1]}"><th scope="row" data-l="Вид"><a href="${p[4]}">${p[0]}</a></th><td class="num" data-l="Стоимость">от ${money(p[2])}</td><td data-l="Срок">${p[3]} дн.</td></tr>`).join('');
+  const cases = [['Арбитражный суд г. Москвы', 'А40-1234/2025', 'Март 2025', 'Спор о качестве фасадных работ на 1 240 м². Обмеры и поверочные расчёты выявили завышение объёмов.', 'Строительная'], ['Никулинский районный суд', '2-567/2025', 'Февраль 2025', 'Оспаривание подписи в договоре займа на 4,5 млн ₽ по почерковедческому исследованию.', 'Криминалистическая'], ['Краснодарский краевой суд', 'А32-890/2025', 'Январь 2025', 'Реконструкция обстоятельств ДТП по следам и повреждениям при противоречивых показаниях.', 'Транспорт']];
   const main = `
-<section class="section"><div class="wrap"><div class="layout">
-  <div>
-    <h1>${s.h1}</h1>
-    <div class="answer mt-6">${s.answer}</div>
-    <div class="prose mt-7">
-      <h2>Когда нужна</h2>
-      <ul>${li(s.when)}</ul>
-      <h2>${s.coreTitle||'Что устанавливает эксперт'}</h2>
-      <ul>${li(s.core)}</ul>
-      <h2>Нормативная база</h2>
-      <ul>${li(s.norms)}</ul>
-      <h2>Пример из практики</h2>
-      <p>${s.caseText}</p>
+<section class="hero"><div class="wrap"><div class="hero__in">
+  <span class="eyebrow" style="color:var(--quicksand)">АНО · Член ТПП г. Москвы · с 2014 года</span>
+  <h1 class="display" style="margin-top:14px">Независимая экспертиза для суда и досудебного урегулирования</h1>
+  <p class="hero__sub">Судебные и досудебные экспертизы по 60+ направлениям. Готовим заключения, которые выдерживают проверку в суде. Москва и Краснодар, работаем по всей России.</p>
+  <div class="hero__scenarios">
+    <a class="btn btn--ondark btn--lg" href="zayavka.html?scenario=sud">Экспертиза по определению суда</a>
+    <a class="btn btn--ondark btn--lg" href="zayavka.html?scenario=vnesud">Внесудебное исследование</a>
+    <a class="btn btn--ondark btn--lg" href="zayavka.html?scenario=recenz">Рецензия на чужое заключение</a>
+  </div>
+</div></div></section>
+${wave()}
+<section class="sec--tight" style="padding-top:40px"><div class="wrap"><div class="stats">
+  <div><div class="stat__n tnum">2014</div><div class="stat__l">год основания</div></div>
+  <div><div class="stat__n tnum">12 386</div><div class="stat__l">выполненных экспертиз</div></div>
+  <div><div class="stat__n tnum">85</div><div class="stat__l">регионов России</div></div>
+  <div><div class="stat__n tnum">60+</div><div class="stat__l">видов экспертиз</div></div>
+</div></div></section>
+
+<section class="sec"><div class="wrap">
+  <div class="sec-head"><span class="eyebrow">Направления</span><h2>Экспертизы по группам</h2><p>11 департаментов, более 60 видов. Строительная экспертиза — флагманское направление.</p></div>
+  <div class="dirs">${dirsCards()}</div>
+  <p class="mt-6"><a class="arrow" href="ekspertizy.html">Все виды экспертиз <span class="a">→</span></a></p>
+</div></section>
+
+<section class="sec sec--dark"><div class="wrap">
+  <div class="sec-head"><span class="eyebrow">С чего начать</span><h2>Типовые ситуации</h2></div>
+  <div class="sits">${sits.map(s => `<a class="sit" href="${s[1]}">${s[0]}</a>`).join('')}</div>
+</div></section>
+
+<section class="sec"><div class="wrap">
+  <div class="sec-head"><span class="eyebrow">Кейсы</span><h2>Из практики центра</h2></div>
+  <div class="cards">${cases.map(c => `<article class="case"><div class="case__head"><b>${c[0]}</b> · дело № ${c[1]} · ${c[2]}</div><p>${c[3]}</p><div class="case__tags"><span class="tag">${c[4]}</span></div></article>`).join('')}</div>
+  <p class="mt-6"><a class="arrow" href="keysy.html">Все кейсы <span class="a">→</span></a></p>
+</div></section>
+
+<section class="sec sec--tight" style="background:var(--white)"><div class="wrap">
+  <div class="sec-head"><span class="eyebrow">Стоимость</span><h2>Цены на популярные виды</h2></div>
+  <div class="tbl-wrap"><table class="price" id="price-table-home"><thead><tr><th>Вид экспертизы</th><th>Стоимость</th><th>Срок</th></tr></thead><tbody>${priceRows}</tbody></table></div>
+  ${priceStar()}
+  <p class="mt-4"><a class="btn btn--secondary" href="stoimost.html">Все цены и сроки</a></p>
+</div></section>
+
+<section class="sec"><div class="wrap"><div class="sec-head"><span class="eyebrow">Документы</span><h2>Лицензии и свидетельства</h2></div>
+  <div class="docs">${Array.from({length:12},(_,i)=>`<div class="doc"><img src="assets/certificates/doki_${i+1}.jpg" alt="Документ ${i+1}" loading="lazy"></div>`).join('')}</div>
+  <p class="mt-4"><a class="arrow" href="organizaciya.html#docs">Все документы центра <span class="a">→</span></a></p>
+</div></section>
+
+<section class="sec" style="background:var(--white)"><div class="wrap"><div class="sec-head"><span class="eyebrow">Заявка</span><h2>Оставьте заявку на экспертизу</h2><p>Заполните форму — эксперт свяжется в рабочее время.</p></div>
+  ${formHTML('vnesud')}
+</div></section>`;
+  return shell({ file: 'index.html', title: `${SITE.name} — независимая судебная и досудебная экспертиза в Москве и Краснодаре`, desc: 'Независимый центр судебной и досудебной экспертизы. Строительная, оценочная, криминалистическая, автотехническая и другие экспертизы. 60+ видов, заключения для суда. Москва, Краснодар.', active: 'index.html', main });
+}
+
+/* Форма заявки (3 вкладки) */
+function formHTML(pre) {
+  const opts = GROUPS.map(g => `<option>${g.name}</option>`).join('');
+  return `<form class="form" data-request novalidate>
+    <div class="form-tabs">
+      <button type="button" class="form-tab${pre==='sud'?' on':''}" data-scenario="sud">Для суда</button>
+      <button type="button" class="form-tab${pre==='vnesud'?' on':''}" data-scenario="vnesud">Внесудебная</button>
+      <button type="button" class="form-tab${pre==='recenz'?' on':''}" data-scenario="recenz">Рецензия</button>
+      <button type="button" class="form-tab${pre==='price'?' on':''}" data-scenario="price">Расчёт стоимости</button>
     </div>
-    <h2 class="mt-7">Вопросы и ответы</h2>
-    ${faq.html}
-    <h2 class="mt-7">Смежные экспертизы</h2>
-    <ul class="prose">${related}</ul>
+    <input type="hidden" class="js-scenario" value="${pre||'vnesud'}">
+    <div class="field"><label for="fn">Имя</label><input id="fn" type="text" required><span class="msg">Укажите имя</span></div>
+    <div class="field"><label for="fp">Телефон</label><input id="fp" type="tel" required placeholder="+7 ___ ___-__-__"><span class="msg">Укажите телефон</span></div>
+    <div class="field"><label for="fe">E-mail</label><input id="fe" type="email"></div>
+    <div class="field"><label for="fv">Вид экспертизы</label><select id="fv" class="js-vid"><option value="">Не знаю / подскажите</option>${opts}</select></div>
+    <div class="field"><label for="fm">Опишите ситуацию</label><textarea id="fm"></textarea></div>
+    <label class="consent"><input type="checkbox" required> Согласен на обработку персональных данных согласно <a href="politika.html">политике конфиденциальности</a></label>
+    <button class="btn btn--primary btn--lg" type="submit">Отправить заявку</button>
+    <div class="form-ok">Заявка отправлена. Это демонстрационный прототип — данные никуда не передаются. На боевом сайте эксперт свяжется с вами в рабочее время.</div>
+  </form>`;
+}
+
+/* Экспертизы — все виды */
+function ekspertizyPage() {
+  const trail = [{ t: 'Главная', href: 'index.html' }, { t: 'Экспертизы' }];
+  const toc = GROUPS.map((g, i) => `<a href="#g${i}">${g.name}</a>`).join('');
+  const groups = GROUPS.map((g, i) => {
+    const items = g.items.map(n => `<a data-search-item data-name="${esc(n)}" href="${svcHref(n, g.slug)}">${n}</a>`).join('');
+    return `<div class="ek-group" data-search-group id="g${i}"><h3><a href="${g.slug}.html">${g.name}</a></h3><div class="mega__list" style="margin-top:10px">${items}</div></div>`;
+  }).join('');
+  const main = `
+<section class="sec"><div class="wrap">
+  <div class="prose narrow"><h1>Виды экспертиз</h1>
+  <div class="answer mt-4">Центр проводит судебные и досудебные экспертизы по 11 направлениям и более чем 60 видам. Выберите нужный вид ниже или воспользуйтесь поиском. На каждой странице — прямой ответ по сути, цена «от», сроки и порядок работы.</div></div>
+  <div style="display:grid;grid-template-columns:260px 1fr;gap:40px;margin-top:32px" class="ek-layout">
+    <aside class="aside"><input id="type-search" type="search" placeholder="Поиск по видам…" style="width:100%;height:44px;border:1px solid var(--shellstone);border-radius:4px;padding:0 14px;margin-bottom:16px">
+      <nav class="ek-toc" style="display:flex;flex-direction:column;gap:4px;font-size:14px">${toc}</nav></aside>
+    <div style="display:flex;flex-direction:column;gap:28px">${groups}</div>
+  </div>
+</div></section>${ctaBand()}`;
+  return shell({ file: 'ekspertizy.html', title: `Все виды экспертиз — каталог | ${SITE.name}`, desc: 'Полный каталог судебных и досудебных экспертиз: строительная, оценочная, криминалистическая, инженерная, экономическая и другие — более 60 видов с ценами.', active: 'ekspertizy.html', trail, main });
+}
+
+/* Пиллар группы */
+function pillarPage(g) {
+  const trail = [{ t: 'Главная', href: 'index.html' }, { t: 'Экспертизы', href: 'ekspertizy.html' }, { t: g.name.split(' —')[0] }];
+  const cards = g.items.map(n => `<a class="card" href="${svcHref(n, g.slug)}" style="text-decoration:none"><h4>${n}</h4><div class="card__meta"><span>от ${money(g.from)}</span><span class="a">Подробнее →</span></div></a>`).join('');
+  const faqSub = pickFaq(g.name, 6);
+  const main = `
+<section class="sec"><div class="wrap"><div class="layout">
+  <div>
+    <h1>${g.name}</h1>
+    <div class="answer mt-4">${g.name} решает споры и задачи, где нужны специальные знания: ${g.desc.toLowerCase()} Проводим досудебные исследования и судебные экспертизы, готовим заключение по 73-ФЗ, пригодное для суда. Стоимость — от ${money(g.from)}, срок обычно от 5 рабочих дней. Точную цену эксперт называет после изучения материалов.</div>
+    <div class="prose mt-8">
+      <h2>Виды в этой группе</h2>
+    </div>
+    <div class="cards mt-4">${cards}</div>
+    <div class="prose mt-8">
+      <h2>Когда назначается</h2>
+      <ul>${li(['Досудебное обоснование претензии или иска','Назначение судом по ходатайству стороны','Спор со страховой, подрядчиком или контрагентом','Оценка ущерба и его размера','Проверка чужого заключения (рецензия)'])}</ul>
+      <h2>Что вы получите</h2>
+      <ul>${li(['Заключение эксперта в 2 экземплярах','Обоснование выводов со ссылками на нормы и методики','Консультацию по формулировке вопросов для суда','При необходимости — участие эксперта в судебном заседании'])}</ul>
+    </div>
+    <h2 class="mt-8">Частые вопросы</h2>
+    ${faqAccordion(faqSub)}
+  </div>
+  <aside class="aside">${asidePanels(g.from)}</aside>
+</div></div></section>${ctaBand()}`;
+  return shell({ file: g.slug + '.html', title: `${g.name} — цена и сроки | ${SITE.name}`, desc: `${g.name}: ${g.desc} Досудебно и для суда, от ${money(g.from)}. Заключение для суда, Москва и Краснодар.`, active: 'ekspertizy.html', trail, main });
+}
+function asidePanels(from) {
+  return `<div class="plate"><div class="plate__price">от ${money(from)}</div><div class="plate__meta">срок от 5 рабочих дней · заключение эксперта, 2 экз.</div>${priceStar()}</div>
+    <div class="panel"><a class="btn btn--primary" style="width:100%" href="zayavka.html?scenario=sud">Рассчитать стоимость</a></div>
+    <div class="panel panel--dark"><h4>Бесплатная консультация</h4><p>Эксперт подскажет вид экспертизы и вопросы.</p><a class="btn btn--ondark" style="width:100%;margin-top:12px" href="tel:${SITE.phoneRaw}">${SITE.phone}</a></div>`;
+}
+
+/* Страница вида — эталон (Причины залива) с полным текстом §7 */
+function zalivPage() {
+  const trail = [{ t: 'Главная', href: 'index.html' }, { t: 'Экспертизы', href: 'ekspertizy.html' }, { t: 'Строительная', href: 'stroitelnaya-ekspertiza.html' }, { t: 'Причины залива' }];
+  const faqSub = [
+    { q: 'Чем экспертиза причин залива отличается от оценки ущерба?', a: 'Экспертиза причин залива устанавливает источник протечки и виновное лицо, а размер ущерба определяет отдельное оценочное исследование. Их часто проводят одновременно: одно отвечает «кто виноват», второе — «на какую сумму».' },
+    { q: 'Можно ли провести экспертизу, если следы залива уже устранены?', a: 'Да, но сложнее. Эксперт работает по фотографиям, актам аварийно-диспетчерской службы, записям управляющей компании и проектной документации. Чем больше сохранившихся данных, тем точнее вывод. Осмотр по свежим следам всегда предпочтительнее.' },
+    { q: 'Обязательно ли присутствие представителя управляющей компании при осмотре?', a: 'Не обязательно, но желательно. Стороны и УК уведомляются о дате осмотра телеграммой или письмом. Их неявка при надлежащем уведомлении не препятствует исследованию.' },
+    { q: 'Что делать, если соседи не пускают эксперта в квартиру?', a: 'При досудебном исследовании доступ обеспечивает заказчик. Если источник в чужой квартире и доступа нет, вопрос решается через суд: в рамках судебной экспертизы доступ обеспечивается определением суда.' },
+    { q: 'Возместит ли суд расходы на экспертизу?', a: 'Расходы на судебную экспертизу относятся к судебным издержкам и взыскиваются с проигравшей стороны пропорционально удовлетворённым требованиям (ст. 98 ГПК, ст. 110 АПК). Сохраните договор и платёжные документы.' }
+  ];
+  const main = `
+<section class="sec"><div class="wrap"><div class="layout">
+  <div>
+    <h1>Экспертиза причин залива квартиры</h1>
+    <div class="answer mt-4">Экспертиза причин залива устанавливает источник протечки, причину аварии и лицо, ответственное за её возникновение. Исследование проводится по определению суда или по заявлению собственника, арендатора либо управляющей организации. Эксперт осматривает помещение и инженерные системы, изучает записи аварийно-диспетчерской службы и проектную документацию, определяет направление распространения влаги и разграничивает балансовую принадлежность сетей. Результат — заключение эксперта, пригодное для предъявления в суд. Размер ущерба определяется отдельным оценочным исследованием, которое может проводиться одновременно.</div>
+    <div class="prose mt-8">
+      <h2>Когда назначается</h2>
+      <ul>${li(['Спор с соседями или управляющей компанией о причине залива','Отказ виновной стороны компенсировать ущерб','Спор о принадлежности прорвавшейся трубы к общему имуществу','Страховой случай по заливу','Подготовка иска и обоснование суммы требований'])}</ul>
+      <h2>Вопросы, которые ставятся перед экспертом</h2>
+      <ul>${li(['Какова причина залива помещения по адресу …?','Какой элемент инженерной системы явился источником протечки?','Относится ли данный элемент к общему имуществу многоквартирного дома?','Имеются ли признаки нарушения правил эксплуатации инженерного оборудования?','Соответствует ли выполненное переустройство инженерных сетей проектной документации?','Имеется ли причинно-следственная связь между выявленными нарушениями и произошедшим заливом?'])}</ul>
+      <h2>Что нужно предоставить</h2>
+      <ul>${li(['Документы на помещение и доступ для осмотра','Акт о заливе, составленный управляющей компанией','Фотографии и видео последствий','Записи аварийно-диспетчерской службы','Проектную документацию на инженерные сети (при наличии)'])}</ul>
+      <h2>Как проходит исследование</h2>
+      <ol>${li(['Изучение материалов и документов','Уведомление сторон об осмотре','Осмотр помещения и инженерных систем','Определение источника и направления распространения влаги','Разграничение балансовой принадлежности сетей','Оформление заключения с выводами'])}</ol>
+      <h2>Нормативная база</h2>
+      <ul>${li(['ЖК РФ ст. 36, 161','Постановление Правительства РФ № 491 от 13.08.2006','СП 30.13330.2020; СП 73.13330.2016','ГОСТ Р 56198-2014','ГПК РФ ст. 79, 86'])}</ul>
+    </div>
+    <h2 class="mt-8">Эксперт-исполнитель</h2>
+    <div class="expert" style="max-width:340px;text-align:left;display:flex;gap:16px;align-items:center">
+      <div class="expert__ph" style="margin:0">СВ</div><div><h4>Соколов В. А.</h4><div class="spec">Инженер-строитель, судебный эксперт</div><div class="meta">Стаж 14 лет · более 600 экспертиз</div></div>
+    </div>
+    <h2 class="mt-8">Частые вопросы</h2>
+    ${faqAccordion(faqSub)}
+    <div class="panel mt-6" style="border-left:3px solid var(--seal-blue)"><b>Не согласны с чужим заключением по заливу?</b><p class="muted" style="margin-top:6px">Подготовим рецензию с разбором методических нарушений.</p><a class="arrow mt-4" href="recenzii.html">Заказать рецензию <span class="a">→</span></a></div>
+    <h2 class="mt-8">Смежные виды</h2>
+    <div class="cards">${['Ущерб от залива','Инженерных систем и сетей','Установление виновника залива'].map(n=>`<a class="card" href="stroitelnaya-ekspertiza.html"><h4>${n}</h4><div class="card__meta"><span>от 8 000 ₽</span><span class="a">→</span></div></a>`).join('')}</div>
+    <p class="caption muted mt-8">Обновлено: июль 2026</p>
   </div>
   <aside class="aside">
-    <div class="panel">
-      <h4>Стоимость и срок</h4>
-      <div class="panel__row"><span class="k">Досудебное исследование</span><span class="v">от ${money(s.p1)}</span></div>
-      <div class="panel__row"><span class="k">Судебная экспертиза</span><span class="v">от ${money(s.p2)}</span></div>
-      <div class="panel__row"><span class="k">Срок</span><span class="v">${s.term}</span></div>
-      <p class="price-note">${DISCLAIMER}</p>
-      <a class="btn btn--primary" style="width:100%;justify-content:center;margin-top:8px" href="kontakty.html">Рассчитать стоимость</a>
-    </div>
-    <div class="panel panel--brand">
-      <h4>Бесплатная консультация</h4>
-      <p>Эксперт подскажет, какая экспертиза нужна и какие вопросы поставить.</p>
-      <a class="btn btn--ondark" href="tel:${SITE.phone800Raw}">${SITE.phone800}</a>
-    </div>
-    <div class="panel">
-      <h4>Почему центр</h4>
-      <div class="panel__row"><span class="k">Опыт</span><span class="v">10 лет</span></div>
-      <div class="panel__row"><span class="k">Экспертиз</span><span class="v tnum">12 386</span></div>
-      <div class="panel__row"><span class="k">Из них судебных</span><span class="v tnum">6 301</span></div>
-      <div class="panel__row"><span class="k">Статус</span><span class="v">Член ТПП Москвы</span></div>
-    </div>
+    <div class="plate"><div class="plate__price">от 25 000 ₽</div><div class="plate__meta">от 5 рабочих дней · заключение эксперта, 2 экз.</div>${priceStar()}</div>
+    <div class="panel"><a class="btn btn--primary" style="width:100%" href="zayavka.html?scenario=sud&vid=${encodeURIComponent('Экспертиза причин залива')}">Оставить заявку</a></div>
+    <div class="panel panel--dark"><h4>Бесплатная консультация</h4><p>Поможем сформулировать вопросы для суда.</p><a class="btn btn--ondark" style="width:100%;margin-top:12px" href="tel:${SITE.phoneRaw}">${SITE.phone}</a></div>
   </aside>
-</div></div></section>
-${ctaBand()}`;
-  return shell({file:s.file,title:`${s.title} — цена, сроки, вопросы | ${SITE.name}`,desc:s.desc,active:'uslugi.html',trail,schema:faq.schema,main});
+</div></div></section>${ctaBand()}`;
+  return shell({ file: 'prichiny-zaliva.html', title: `Экспертиза причин залива квартиры — цена от 25 000 ₽ | ${SITE.name}`, desc: 'Экспертиза причин залива: установление источника протечки и виновного лица. Досудебно и для суда, от 25 000 ₽, от 5 рабочих дней. Заключение для суда.', active: 'ekspertizy.html', trail, main });
 }
 
-const SERVICES=[
-{file:'uslugi-stroitelnaya.html',crumb:'Строительно-техническая',title:'Строительно-техническая экспертиза',
- h1:'Строительно-техническая экспертиза',p1:30000,p2:50000,term:'от 7 рабочих дней',
- desc:'Строительно-техническая экспертиза в Москве: качество и объём работ, дефекты, сметы, причины залива. Досудебно и для суда, от 30 000 ₽.',
- answer:'<strong>Строительно-техническая экспертиза</strong> определяет качество и объём выполненных работ, причины дефектов и разрушений, соответствие проекту и строительным нормам, стоимость устранения недостатков. Проводим досудебные исследования и судебные экспертизы по спорам с подрядчиками, застройщиками и страховыми компаниями. Заключение готовит аттестованный инженер-строитель, выводы обоснованы обмерами и расчётами и принимаются судами. Досудебное исследование — от 30 000 ₽, срок от 7 рабочих дней.',
- when:['Спор о качестве или объёме выполненных работ с подрядчиком','Трещины, протечки, промерзание, разрушение конструкций','Определение стоимости устранения недостатков','Проверка сметы и фактически выполненных работ','Раздел объекта недвижимости или выдел доли','Оценка ущерба зданию после аварии или залива'],
- core:['Соответствие работ проекту, СП и ГОСТ','Фактический объём и стоимость выполненных работ','Причина возникновения дефектов и повреждений','Стоимость и способ устранения недостатков','Пригодность объекта к дальнейшей эксплуатации','Наличие отступлений от проектной документации'],
- norms:['Градостроительный кодекс РФ','СП 48.13330 «Организация строительства»','ГОСТ 31937 «Здания и сооружения. Правила обследования»','73-ФЗ «О государственной судебно-экспертной деятельности»'],
- caseText:'Спор о качестве фасадных работ на объекте 1 240 м². Заказчик оспаривал объём и стоимость. Обмеры и расчёты подтвердили завышение объёмов; суд принял заключение и взыскал разницу с подрядчика.',
- faq:[{q:'Чем досудебное исследование отличается от судебной экспертизы?',a:'Досудебное исследование заказывает сторона до суда или вне процесса — им подкрепляют претензию или иск. Судебную экспертизу назначает суд определением, эксперт предупреждается об ответственности по ст. 307 УК РФ. Оба заключения соответствуют 73-ФЗ.'},
- {q:'Сколько стоит строительная экспертиза?',a:'Досудебное исследование — от 30 000 ₽, судебная экспертиза — от 50 000 ₽. Итоговая цена зависит от площади объекта, числа вопросов и необходимости выезда. Точную стоимость эксперт назовёт после консультации.'},
- {q:'Сколько времени занимает экспертиза?',a:'От 7 рабочих дней. Срок зависит от сложности объекта и количества исследуемых вопросов и фиксируется в договоре.'},
- {q:'Примет ли суд ваше заключение?',a:'Да. Экспертизу проводят аттестованные специалисты, заключение оформляется по 73-ФЗ и принимается судами всех инстанций.'},
- {q:'Что нужно, чтобы начать?',a:'Опишите ситуацию и приложите документы: договор, смету, проект, фотографии. Эксперт определит вопросы, стоимость и срок.'}],
- related:['uslugi-ocenochnaya.html','uslugi-zemleustroitelnaya.html','uslugi-pozharno-tehnicheskaya.html'],ic:IC.build,cardText:'Качество и объём работ, дефекты, сметы, причины залива, стоимость устранения.'},
+/* Универсальный шаблон вида (для стандалон-услуг) */
+function servicePage(o) {
+  const trail = [{ t: 'Главная', href: 'index.html' }, { t: 'Экспертизы', href: 'ekspertizy.html' }, { t: o.group, href: o.groupHref }, { t: o.crumb }];
+  const main = `
+<section class="sec"><div class="wrap"><div class="layout">
+  <div>
+    <h1>${o.h1}</h1>
+    <div class="answer mt-4">${o.answer}</div>
+    <div class="prose mt-8">
+      <h2>Когда назначается</h2><ul>${li(o.when)}</ul>
+      <h2>Вопросы эксперту</h2><ul>${li(o.q)}</ul>
+      <h2>Нормативная база</h2><ul>${li(o.norms)}</ul>
+    </div>
+    <h2 class="mt-8">Частые вопросы</h2>${faqAccordion(o.faq)}
+    <h2 class="mt-8">Смежные виды</h2>
+    <div class="cards">${o.related.map(r=>`<a class="card" href="${r[1]}"><h4>${r[0]}</h4><div class="card__meta"><span class="a">Подробнее →</span></div></a>`).join('')}</div>
+  </div>
+  <aside class="aside">
+    <div class="plate"><div class="plate__price">от ${money(o.from)}</div><div class="plate__meta">${o.term} · заключение эксперта</div>${priceStar()}</div>
+    <div class="panel"><a class="btn btn--primary" style="width:100%" href="zayavka.html?scenario=sud&vid=${encodeURIComponent(o.h1)}">Оставить заявку</a></div>
+    <div class="panel panel--dark"><h4>Консультация бесплатна</h4><a class="btn btn--ondark" style="width:100%;margin-top:12px" href="tel:${SITE.phoneRaw}">${SITE.phone}</a></div>
+  </aside>
+</div></div></section>${ctaBand()}`;
+  return shell({ file: o.file, title: `${o.h1} — цена и сроки | ${SITE.name}`, desc: o.desc, active: 'ekspertizy.html', trail, main });
+}
 
-{file:'uslugi-pocherkovedcheskaya.html',crumb:'Почерковедческая',title:'Почерковедческая экспертиза',
- h1:'Почерковедческая экспертиза',p1:15000,p2:25000,term:'5–10 рабочих дней',
- desc:'Почерковедческая экспертиза подписи и рукописи в Москве: установление исполнителя, подделки, подражания. Досудебно и для суда, от 15 000 ₽.',
- answer:'<strong>Почерковедческая экспертиза</strong> устанавливает исполнителя подписи или рукописной записи, факт подражания чужому почерку и необычные условия выполнения. Назначается по спорам о подлинности договоров, расписок, завещаний и доверенностей. Исследование проводят по оригиналам, а при их отсутствии — по копиям с ограничениями. Заключение готовит эксперт-почерковед по методикам судебного почерковедения. Стоимость — от 15 000 ₽, срок 5–10 рабочих дней.',
- when:['Оспаривание подписи в договоре, расписке или акте','Сомнения в подлинности завещания или доверенности','Подозрение на подделку или подражание почерку','Трудовые и наследственные споры','Проверка авторства рукописного текста','Кредитные и корпоративные споры о документах'],
- coreTitle:'Что устанавливает эксперт',
- core:['Кем выполнена подпись или запись','Одним или разными лицами выполнены записи','Выполнена ли подпись с подражанием','В обычных или необычных условиях сделана запись','Пригодность материала для исследования','Признаки технической подделки подписи'],
- norms:['73-ФЗ «О государственной судебно-экспертной деятельности»','Методики судебно-почерковедческой экспертизы (РФЦСЭ Минюста)','ст. 307 УК РФ (ответственность эксперта)'],
- caseText:'Оспаривание договора займа на 4,5 млн ₽. Ответчик утверждал, что подпись не его. Сравнительное исследование образцов показало: подпись выполнена другим лицом. Суд отказал во взыскании.',
- faq:[{q:'Можно ли провести экспертизу по копии документа?',a:'Да, но с ограничениями. По копии эксперт часто не может оценить нажим и признаки технической подделки. Для полного исследования нужен оригинал.'},
- {q:'Сколько образцов почерка нужно?',a:'Обычно требуются свободные образцы (сделанные до спора), условно-свободные и экспериментальные. Эксперт подскажет точный состав перед началом.'},
- {q:'Сколько стоит почерковедческая экспертиза?',a:'От 15 000 ₽ за досудебное исследование и от 25 000 ₽ за судебную экспертизу. Цена зависит от числа исследуемых подписей и образцов.'},
- {q:'Установит ли эксперт давность подписи?',a:'Возраст штрихов определяет отдельная экспертиза давности документа. Почерковедческая отвечает на вопрос об исполнителе.'},
- {q:'Примут ли заключение в суде?',a:'Да, заключение оформляется по 73-ФЗ и принимается судами. Эксперт может быть вызван для дачи пояснений.'}],
- related:['uslugi-ekonomicheskaya.html','uslugi-ocenochnaya.html','uslugi-avtotehnicheskaya.html'],ic:IC.pen,cardText:'Установление исполнителя подписи и рукописи, подделка, подражание, условия выполнения.'},
+/* FAQ helpers */
+function faqAccordion(items) {
+  return `<div class="faq">${items.map(f => `<details><summary>${esc(f.q)}</summary><div class="a">${esc(f.a)}</div></details>`).join('')}</div>`;
+}
+function pickFaq(topicHint, n) {
+  let pool = [];
+  FAQ.forEach(g => { if (topicHint.toLowerCase().indexOf(g.label.toLowerCase().split(' ')[0]) !== -1 || g.label.toLowerCase().indexOf(topicHint.toLowerCase().split(' ')[0]) !== -1) pool = pool.concat(g.items); });
+  if (pool.length < n) { const gen = FAQ.find(g => g.label === 'Общие вопросы'); if (gen) pool = pool.concat(gen.items); }
+  return pool.slice(0, n);
+}
 
-{file:'uslugi-ocenochnaya.html',crumb:'Оценочная',title:'Оценочная экспертиза',
- h1:'Оценочная экспертиза',p1:5000,p2:30000,term:'от 3 рабочих дней',
- desc:'Оценочная экспертиза в Москве: рыночная стоимость недвижимости, транспорта, бизнеса, размер ущерба. Отчёт по 135-ФЗ, от 5 000 ₽.',
- answer:'<strong>Оценочная экспертиза</strong> определяет рыночную или ликвидационную стоимость недвижимости, транспорта, оборудования и бизнеса, а также размер ущерба от залива, пожара или ДТП. Применяется при раздёле имущества, наследстве, оспаривании кадастровой стоимости, залоге и страховых спорах. Отчёт составляется по 135-ФЗ и федеральным стандартам оценки. Оценка — от 5 000 ₽, судебная оценочная экспертиза — от 30 000 ₽.',
- when:['Раздел имущества или выдел доли','Вступление в наследство','Оспаривание кадастровой стоимости','Ущерб от залива, пожара или ДТП','Залог, выкуп, взнос в уставный капитал','Оценка бизнеса и нематериальных активов'],
- core:['Рыночная и ликвидационная стоимость объекта','Размер причинённого ущерба','Стоимость восстановительного ремонта','Соотношение кадастровой и рыночной стоимости','Стоимость доли в имуществе или бизнесе'],
- norms:['135-ФЗ «Об оценочной деятельности»','Федеральные стандарты оценки (ФСО I–VI)','73-ФЗ (для судебной оценочной экспертизы)'],
- caseText:'Оспаривание кадастровой стоимости земельного участка. Кадастровая оценка превышала рыночную почти вдвое. По отчёту стоимость снижена, налоговая база пересчитана в пользу собственника.',
- faq:[{q:'Чем оценка отличается от судебной оценочной экспертизы?',a:'Оценка — отчёт по 135-ФЗ для сделок, залога, наследства. Судебная оценочная экспертиза назначается судом по 73-ФЗ и отвечает на поставленные судом вопросы.'},
- {q:'Сколько стоит оценка?',a:'Оценка недвижимости — от 5 000 ₽, судебная оценочная экспертиза — от 30 000 ₽. Стоимость зависит от типа объекта и цели.'},
- {q:'Как быстро готов отчёт?',a:'Оценка простого объекта — от 3 рабочих дней. Сложные объекты и бизнес — дольше, срок фиксируется в договоре.'},
- {q:'Подойдёт ли отчёт для суда и банка?',a:'Да. Отчёт по 135-ФЗ и ФСО принимают суды, банки, нотариусы и налоговые органы.'},
- {q:'Что нужно для оценки?',a:'Правоустанавливающие документы на объект и его характеристики. Для оценки ущерба — акт, фотографии, сметы.'}],
- related:['uslugi-stroitelnaya.html','uslugi-avtotehnicheskaya.html','uslugi-zemleustroitelnaya.html'],ic:IC.coins,cardText:'Рыночная стоимость недвижимости, транспорта, бизнеса и размер ущерба.'},
+/* Стоимость и сроки */
+function stoimostPage() {
+  const trail = [{ t: 'Главная', href: 'index.html' }, { t: 'Стоимость и сроки' }];
+  const groupsUniq = Array.from(new Set(PRICES.map(p => p[1])));
+  const rows = PRICES.map(p => `<tr data-name="${esc(p[0])}" data-group="${p[1]}"><th scope="row" data-l="Вид"><a href="${p[4]}">${p[0]}</a></th><td data-l="Группа">${p[1]}</td><td class="num" data-l="Стоимость">от ${money(p[2])}</td><td data-l="Срок">${p[3]} дн.</td></tr>`).join('');
+  const opts = groupsUniq.map(g => `<option value="${g}">${g}</option>`).join('');
+  const faqSub = (FAQ.find(g => g.label === 'Стоимость и оплата') || { items: [] }).items.slice(0, 6);
+  const main = `
+<section class="sec"><div class="wrap"><div class="prose narrow"><h1>Стоимость экспертизы и сроки проведения</h1>
+  <div class="answer mt-4">Стоимость судебной и досудебной экспертизы в центре начинается от 8 000 ₽ и зависит от вида исследования, объёма материалов, числа вопросов и необходимости выезда. Точную сумму эксперт называет после изучения материалов и фиксирует в договоре — без доплат по ходу работы. Ниже — сводная таблица по всем направлениям с ценой «от» и сроком в рабочих днях.</div></div>
+  <div class="tbl-tools mt-8"><input id="price-search" type="search" placeholder="Поиск по названию…"><select id="price-group"><option value="">Все группы</option>${opts}</select></div>
+  <div class="tbl-wrap"><table class="price" id="price-table"><thead><tr><th>Вид экспертизы</th><th>Группа</th><th>Стоимость</th><th>Срок</th></tr></thead><tbody>${rows}</tbody></table></div>
+  ${priceStar()}
+</div></section>
+<section class="sec sec--tight" style="background:var(--white)"><div class="wrap">
+  <div class="cards" id="zavisit">
+    <div class="panel"><h4>От чего зависит стоимость</h4><ul class="prose" style="margin-top:8px">${li(['Число вопросов и объём материалов дела','Необходимость выезда и его удалённость','Сложность объекта исследования','Привлечение лаборатории','Комиссионный или комплексный характер','Срочность'])}</ul></div>
+    <div class="panel"><h4>Что входит в стоимость</h4><ul class="prose" style="margin-top:8px">${li(['Исследование по методике','Заключение эксперта в 2 экземплярах','Консультация по формулировке вопросов'])}</ul></div>
+    <div class="panel"><h4>Оплачивается отдельно</h4><ul class="prose" style="margin-top:8px">${li(['Выезд за пределы Москвы и области','Дополнительные экземпляры заключения','Участие эксперта в судебном заседании','Лабораторные испытания сверх базового перечня'])}</ul></div>
+  </div>
+  <div id="oplata" class="mt-8"><h2>Порядок оплаты</h2>
+  <div class="cards mt-4">
+    <div class="panel"><h4>Физическое лицо</h4><p class="muted mt-4">Счёт или карта, предоплата 100%.</p></div>
+    <div class="panel"><h4>Юридическое лицо</h4><p class="muted mt-4">Счёт, договор, закрывающие документы. Возможна постоплата.</p></div>
+    <div class="panel"><h4>По определению суда</h4><p class="muted mt-4">Внесение средств на депозитный счёт суда стороной, заявившей ходатайство (ст. 96 ГПК, ст. 108 АПК).</p></div>
+  </div></div>
+  <div class="answer mt-8"><b>Возмещение расходов.</b> Расходы на назначенную судом экспертизу относятся к судебным издержкам и взыскиваются с проигравшей стороны. При частичном удовлетворении иска — пропорционально удовлетворённым требованиям (ст. 98 ГПК РФ, ст. 110 АПК РФ).</div>
+</div></section>
+<section class="sec"><div class="wrap"><div class="sec-head"><h2>Частые вопросы о стоимости</h2></div>${faqAccordion(faqSub)}</div></section>
+${ctaBand()}`;
+  return shell({ file: 'stoimost.html', title: `Стоимость экспертизы и сроки — прайс-лист | ${SITE.name}`, desc: 'Сколько стоит судебная и досудебная экспертиза: сводная таблица цен «от» по всем видам, сроки, от чего зависит стоимость, порядок оплаты и возмещение расходов.', active: '', trail, main });
+}
 
-{file:'uslugi-avtotehnicheskaya.html',crumb:'Автотехническая',title:'Автотехническая экспертиза',
- h1:'Автотехническая экспертиза',p1:15000,p2:25000,term:'5–12 рабочих дней',
- desc:'Автотехническая экспертиза в Москве: обстоятельства ДТП, стоимость ремонта, трасология, УТС. Досудебно и для суда, от 15 000 ₽.',
- answer:'<strong>Автотехническая экспертиза</strong> восстанавливает обстоятельства и механизм ДТП, оценивает техническое состояние автомобиля, стоимость восстановительного ремонта и утрату товарной стоимости. Назначается по спорам о вине в ДТП, при занижении страховой выплаты и по качеству ремонта. Заключение готовит эксперт-автотехник и принимают суды. Стоимость — от 15 000 ₽, срок 5–12 рабочих дней.',
- when:['Спор о вине участников ДТП','Занижение выплаты страховой компанией','Скрытые повреждения после аварии','Спор о качестве ремонта','Расчёт утраты товарной стоимости (УТС)','Проверка соответствия повреждений обстоятельствам'],
- core:['Механизм и обстоятельства ДТП','Скорость движения перед столкновением','Была ли техническая возможность избежать ДТП','Стоимость восстановительного ремонта','Величина утраты товарной стоимости','Соответствие повреждений заявленным обстоятельствам'],
- norms:['73-ФЗ «О государственной судебно-экспертной деятельности»','Методика Минюста 2018 г. (расчёт по ОСАГО)','Правила дорожного движения РФ'],
- caseText:'Противоречивые показания участников ДТП. Трасологическое исследование следов и повреждений восстановило траектории движения и установило вину второго участника. Страховая пересмотрела выплату.',
- faq:[{q:'Можно ли оспорить выплату страховой?',a:'Да. Независимая экспертиза рассчитывает реальную стоимость ремонта и УТС. Разницу с выплатой взыскивают в претензионном или судебном порядке.'},
- {q:'Нужен ли автомобиль для осмотра?',a:'Осмотр желателен. При невозможности эксперт работает по акту, фотографиям и материалам дела — с оговоркой о полноте данных.'},
- {q:'Сколько стоит автотехническая экспертиза?',a:'От 15 000 ₽ досудебно и от 25 000 ₽ для суда. Цена зависит от вопросов и объёма исходных данных.'},
- {q:'Что такое УТС?',a:'Утрата товарной стоимости — снижение цены автомобиля после ремонта из-за аварии. Рассчитывается отдельно и взыскивается со страховой или виновника.'},
- {q:'Примет ли суд заключение?',a:'Да, заключение соответствует 73-ФЗ и методике Минюста и принимается судами.'}],
- related:['uslugi-ocenochnaya.html','uslugi-tovarovedcheskaya.html','uslugi-ekonomicheskaya.html'],ic:IC.car,cardText:'Обстоятельства ДТП, стоимость ремонта, трасология, утрата товарной стоимости.'},
+/* Госзакупки */
+function goszakupkiPage() {
+  const trail = [{ t: 'Главная', href: 'index.html' }, { t: 'Госзакупки' }];
+  const faqSub = (FAQ.find(g => g.label === 'Госзакупки') || { items: [] }).items.slice(0, 6);
+  const main = `
+<section class="sec"><div class="wrap"><div class="layout"><div>
+  <h1>Экспертиза по госзакупкам (44-ФЗ и 223-ФЗ)</h1>
+  <div class="answer mt-4">Экспертиза исполнения государственного контракта подтверждает объём, качество и соответствие выполненных работ условиям контракта, обосновывает приёмку или мотивированный отказ. Проводится для заказчиков и поставщиков по 44-ФЗ и 223-ФЗ, а также при спорах о НМЦК и приёмке. Заключение используется в претензионной работе, в суде и при проверках контролирующих органов.</div>
+  <div class="prose mt-8"><h2>По какому закону работаем</h2></div>
+  <div class="cards mt-4"><div class="panel"><h4>44-ФЗ</h4><p class="muted mt-4">Контрактная система для государственных и муниципальных нужд: приёмка, объёмы, качество, обоснование отказа.</p></div><div class="panel"><h4>223-ФЗ</h4><p class="muted mt-4">Закупки отдельных видов юрлиц: соответствие результата условиям договора и техническому заданию.</p></div></div>
+  <div class="prose mt-8"><h2>Для заказчика</h2><ul>${li(['Обоснование отказа в приёмке','Проверка объёмов и качества по контракту','Экспертиза НМЦК'])}</ul><h2>Для поставщика</h2><ul>${li(['Подтверждение выполненных работ','Оспаривание необоснованного отказа в приёмке','Сопровождение спора с заказчиком'])}</ul></div>
+  <h2 class="mt-8">Частые вопросы</h2>${faqAccordion(faqSub)}
+  </div><aside class="aside">${asidePanels(35000)}</aside></div></div></section>${ctaBand()}`;
+  return shell({ file: 'goszakupki.html', title: `Экспертиза госзакупок 44-ФЗ и 223-ФЗ | ${SITE.name}`, desc: 'Экспертиза исполнения госконтракта по 44-ФЗ и 223-ФЗ: объёмы и качество работ, приёмка и обоснование отказа, НМЦК. Для заказчиков и поставщиков.', active: 'goszakupki.html', trail, main });
+}
 
-{file:'uslugi-tovarovedcheskaya.html',crumb:'Товароведческая',title:'Товароведческая экспертиза',
- h1:'Товароведческая экспертиза',p1:15000,p2:25000,term:'5–10 рабочих дней',
- desc:'Товароведческая экспертиза в Москве: качество, соответствие и стоимость товаров, причины дефектов. Досудебно и для суда, от 15 000 ₽.',
- answer:'<strong>Товароведческая экспертиза</strong> определяет качество и соответствие товара нормам, причину и характер дефектов, снижение стоимости из-за недостатков. Применяется по спорам с продавцами и поставщиками, при возврате товара, порче при перевозке и в страховых случаях. Эксперт устанавливает, производственный дефект или эксплуатационный. Стоимость — от 15 000 ₽, срок 5–10 рабочих дней.',
- when:['Продажа некачественного или бракованного товара','Отказ продавца принять возврат','Спор с поставщиком по партии','Порча при перевозке или хранении','Страховой случай по товару','Оценка снижения стоимости из-за дефекта'],
- core:['Соответствие товара ГОСТ и техническим регламентам','Наличие, характер и причина дефектов','Производственный или эксплуатационный дефект','Снижение стоимости из-за недостатков','Пригодность товара к использованию'],
- norms:['Закон «О защите прав потребителей»','Технические регламенты ТС и ГОСТ','73-ФЗ (для судебной экспертизы)'],
- caseText:'Партия промышленного оборудования с отказами в первый месяц. Исследование показало производственный дефект узла, не связанный с эксплуатацией. Поставщик заменил партию и возместил убытки.',
- faq:[{q:'Как отличают производственный дефект от эксплуатационного?',a:'Эксперт исследует характер и локализацию дефекта, следы использования и условия хранения. Вывод обосновывается признаками, которые видны при исследовании.'},
- {q:'Сколько стоит товароведческая экспертиза?',a:'От 15 000 ₽ досудебно и от 25 000 ₽ для суда. Цена зависит от вида товара и числа образцов.'},
- {q:'Поможет ли экспертиза вернуть деньги за товар?',a:'Заключение о производственном дефекте — основание для возврата, замены или возмещения по Закону о защите прав потребителей.'},
- {q:'Какие товары исследуете?',a:'Технику, оборудование, мебель, стройматериалы, одежду, продукцию промышленного назначения и другие группы.'},
- {q:'Сколько времени занимает?',a:'5–10 рабочих дней в зависимости от вида товара и вопросов.'}],
- related:['uslugi-avtotehnicheskaya.html','uslugi-ocenochnaya.html','uslugi-ekonomicheskaya.html'],ic:IC.box,cardText:'Качество, соответствие и стоимость товаров, причины и характер дефектов.'},
+/* Рецензии */
+function recenziiPage() {
+  const trail = [{ t: 'Главная', href: 'index.html' }, { t: 'Рецензии' }];
+  const faqSub = (FAQ.find(g => g.label === 'Рецензии') || { items: [] }).items.slice(0, 6);
+  const kinds = [['На строительно-техническую','recenzii.html'],['На оценочную','recenzii.html'],['На почерковедческую','recenzii.html'],['На автотехническую','recenzii.html'],['На инженерно-техническую','recenzii.html'],['На судебно-медицинскую','recenzii.html']];
+  const main = `
+<section class="sec"><div class="wrap"><div class="layout"><div>
+  <h1>Рецензия на заключение эксперта</h1>
+  <div class="answer mt-4">Рецензия — это исследование чужого заключения на предмет методических и процессуальных нарушений. Эксперт проверяет применённые методики, полноту исследования, обоснованность выводов и соответствие требованиям 73-ФЗ. Рецензия помогает оспорить экспертизу оппонента, заявить ходатайство о повторной или дополнительной экспертизе и обосновать сомнения перед судом. Стоимость — от 15 000 ₽, срок 3–7 рабочих дней.</div>
+  <div class="prose mt-8"><h2>Когда рецензия помогает</h2><ul>${li(['Выводы эксперта противоречат материалам дела','Нарушена методика исследования','Эксперт вышел за пределы своей компетенции','Использованы неактуальные нормы','Не исследованы значимые обстоятельства'])}</ul>
+  <h2>Типовые методические нарушения</h2><ul>${li(['Отсутствие описания примененной методики','Необоснованные допущения в расчётах','Игнорирование части исходных данных','Логические разрывы между исследованием и выводами'])}</ul></div>
+  <h2 class="mt-8">Рецензии по видам</h2>
+  <div class="cards mt-4">${kinds.map(k=>`<a class="card" href="${k[1]}"><h4>${k[0]}</h4><div class="card__meta"><span>от 15 000 ₽</span><span class="a">→</span></div></a>`).join('')}</div>
+  <h2 class="mt-8">Частые вопросы</h2>${faqAccordion(faqSub)}
+  </div><aside class="aside">
+    <div class="plate"><div class="plate__price">от 15 000 ₽</div><div class="plate__meta">3–7 рабочих дней</div>${priceStar()}</div>
+    <div class="panel"><a class="btn btn--primary" style="width:100%" href="zayavka.html?scenario=recenz">Заявка на рецензию</a></div>
+    <div class="panel panel--dark"><h4>Консультация бесплатна</h4><a class="btn btn--ondark" style="width:100%;margin-top:12px" href="tel:${SITE.phoneRaw}">${SITE.phone}</a></div>
+  </aside></div></div></section>${ctaBand()}`;
+  return shell({ file: 'recenzii.html', title: `Рецензия на заключение эксперта — оспорить экспертизу | ${SITE.name}`, desc: 'Рецензия на заключение эксперта: разбор методических нарушений для оспаривания экспертизы в суде. От 15 000 ₽, срок 3–7 дней.', active: 'recenzii.html', trail, main });
+}
 
-{file:'uslugi-ekonomicheskaya.html',crumb:'Экономическая',title:'Экономическая экспертиза',
- h1:'Экономическая (финансово-бухгалтерская) экспертиза',p1:30000,p2:50000,term:'от 10 рабочих дней',
- desc:'Финансово-экономическая и бухгалтерская экспертиза в Москве: анализ сделок, размер ущерба, признаки вывода активов. От 30 000 ₽.',
- answer:'<strong>Экономическая экспертиза</strong> анализирует бухгалтерский учёт, сделки и расчёты, определяет размер ущерба и задолженности, обоснованность операций и признаки вывода активов. Назначается по корпоративным, налоговым и кредитным спорам, в делах о банкротстве и по госзакупкам. Заключение готовит эксперт-экономист по данным первичных документов и учёта. Стоимость — от 30 000 ₽, срок от 10 рабочих дней.',
- when:['Корпоративные споры и взыскание убытков','Налоговые и кредитные споры','Дела о банкротстве','Споры по государственным контрактам','Проверка обоснованности расчётов и платежей','Подозрение на вывод активов'],
- core:['Размер ущерба или задолженности','Обоснованность хозяйственных операций','Соответствие учёта первичным документам','Признаки преднамеренного или фиктивного банкротства','Правильность расчёта неустоек и процентов'],
- norms:['402-ФЗ «О бухгалтерском учёте»','Налоговый кодекс РФ','73-ФЗ «О государственной судебно-экспертной деятельности»'],
- caseText:'Корпоративный спор о выводе активов через цепочку сделок. Анализ проводок и договоров подтвердил вывод средств на аффилированных лиц. Сумма установлена и взыскана в пользу общества.',
- faq:[{q:'Какие документы нужны для экспертизы?',a:'Первичные документы, бухгалтерская и налоговая отчётность, договоры, банковские выписки. Точный перечень эксперт определит по задаче.'},
- {q:'Сколько стоит экономическая экспертиза?',a:'От 30 000 ₽ досудебно и от 50 000 ₽ для суда. Стоимость зависит от объёма документов и числа вопросов.'},
- {q:'Сколько времени занимает?',a:'От 10 рабочих дней. Большой объём первички увеличивает срок, который фиксируется в договоре.'},
- {q:'Можно ли по экспертизе взыскать ущерб?',a:'Заключение о размере ущерба — доказательство в суде для взыскания убытков и привлечения к ответственности.'},
- {q:'Проводите ли экспертизу по банкротству?',a:'Да, устанавливаем признаки преднамеренного и фиктивного банкротства, оцениваем сделки должника.'}],
- related:['uslugi-ocenochnaya.html','uslugi-tovarovedcheskaya.html','uslugi-pocherkovedcheskaya.html'],ic:IC.chart,cardText:'Анализ сделок и расчётов, размер ущерба, признаки вывода активов, банкротство.'},
+/* Кейсы — архив */
+function keysyPage() {
+  const trail = [{ t: 'Главная', href: 'index.html' }, { t: 'Кейсы' }];
+  const cases = [
+    ['Арбитражный суд г. Москвы','А40-1234/2025','Март 2025','Спор о качестве и объёме фасадных работ на объекте 1 240 м². Обмеры и поверочные расчёты выявили завышение объёмов на 18%.','Подтверждён ущерб, суд принял заключение.','Строительная'],
+    ['Никулинский районный суд','2-567/2025','Февраль 2025','Оспаривание подписи в договоре займа на 4,5 млн ₽. Сравнительное исследование образцов почерка.','Подпись выполнена другим лицом.','Криминалистическая'],
+    ['Краснодарский краевой суд','А32-890/2025','Январь 2025','Реконструкция обстоятельств ДТП при противоречивых показаниях сторон по следам и повреждениям.','Установлена вина второго участника.','Транспорт'],
+    ['Мосгорсуд','33-4521/2024','Декабрь 2024','Оспаривание кадастровой стоимости земельного участка, завышенной почти вдвое.','Стоимость снижена, налог пересчитан.','Оценочная'],
+    ['АС Московской области','А41-778/2025','Февраль 2025','Корпоративный спор о выводе активов через цепочку сделок с аффилированными лицами.','Подтверждён вывод активов, сумма взыскана.','Экономическая'],
+    ['Пресненский районный суд','2-990/2025','Март 2025','Установление причины залива и принадлежности прорвавшегося стояка к общему имуществу дома.','Виновной признана управляющая компания.','Строительная']
+  ];
+  const tags = ['Строительная','Криминалистическая','Транспорт','Оценочная','Экономическая'];
+  const main = `
+<section class="sec"><div class="wrap">
+  <div class="prose narrow"><h1>Выполненные экспертизы</h1><p class="lead mt-4">Примеры из практики по разным направлениям. Детали дел обезличены; номера приведены как в судебных актах.</p></div>
+  <div id="case-filter" class="mt-8" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+    <span class="small muted">Фильтр:</span>${tags.map(t=>`<button class="tag" data-tag="${t}">${t}</button>`).join('')}
+    <button id="case-reset" class="btn--text" style="margin-left:8px">Сбросить</button>
+    <span class="small muted" style="margin-left:auto">Найдено: <b id="case-count">${cases.length}</b></span>
+  </div>
+  <div class="cards mt-6">${cases.map(c=>`<article class="case" data-case data-tags="${c[5]}"><div class="case__head"><b>${c[0]}</b> · дело № ${c[1]} · ${c[2]}</div><p>${c[3]}</p><div class="case__res" style="margin-top:12px;padding-top:12px;border-top:1px dashed var(--shellstone);color:var(--seal-blue);font-weight:600;font-size:14px">${c[4]}</div><div class="case__tags"><span class="tag">${c[5]}</span></div></article>`).join('')}</div>
+  <p id="case-empty" style="display:none" class="muted mt-6">По выбранным фильтрам ничего не найдено. Сбросьте фильтры.</p>
+</div></section>${ctaBand()}`;
+  return shell({ file: 'keysy.html', title: `Кейсы — выполненные экспертизы | ${SITE.name}`, desc: 'Архив выполненных судебных экспертиз центра «Независимая Экспертиза» с фильтром по видам: строительные, криминалистические, оценочные, экономические.', active: '', trail, main });
+}
 
-{file:'uslugi-zemleustroitelnaya.html',crumb:'Землеустроительная',title:'Землеустроительная экспертиза',
- h1:'Землеустроительная экспертиза',p1:30000,p2:40000,term:'от 10 рабочих дней',
- desc:'Землеустроительная экспертиза в Москве и области: границы участков, наложения, реестровые ошибки, раздел земли. От 30 000 ₽.',
- answer:'<strong>Землеустроительная экспертиза</strong> определяет фактические и юридические границы участков, их площадь, наложения и реестровые ошибки, варианты раздела и порядка пользования. Назначается по спорам о границах, самозахвате и разделе земли. Эксперт выполняет геодезическую съёмку и сопоставляет её с данными ЕГРН. Стоимость — от 30 000 ₽, срок от 10 рабочих дней.',
- when:['Спор о границах смежных участков','Наложение границ по данным ЕГРН','Реестровая (кадастровая) ошибка','Раздел участка или выдел доли','Самозахват части территории','Установление сервитута и порядка пользования'],
- core:['Фактические и юридические границы участка','Площадь и конфигурация','Наличие наложений границ','Наличие реестровой ошибки','Варианты раздела и пользования'],
- norms:['Земельный кодекс РФ','218-ФЗ «О государственной регистрации недвижимости»','73-ФЗ «О государственной судебно-экспертной деятельности»'],
- caseText:'Спор о границе между соседними участками. Съёмка и сопоставление с ЕГРН выявили реестровую ошибку и наложение 1,8 сотки. Суд установил границы по варианту эксперта.',
- faq:[{q:'Что такое реестровая ошибка?',a:'Ошибка в сведениях ЕГРН, перенесённая из межевого плана. Экспертиза выявляет её и предлагает вариант исправления границ.'},
- {q:'Сколько стоит землеустроительная экспертиза?',a:'От 30 000 ₽ досудебно и от 40 000 ₽ для суда. Цена зависит от площади и числа участков.'},
- {q:'Нужен ли выезд на участок?',a:'Да, геодезическая съёмка на местности — основа исследования. Дату согласуем заранее.'},
- {q:'Сколько времени занимает?',a:'От 10 рабочих дней с учётом выезда и обработки данных съёмки.'},
- {q:'Поможет ли при разделе участка?',a:'Да, эксперт предлагает технически возможные варианты раздела с учётом норм и подъездов.'}],
- related:['uslugi-stroitelnaya.html','uslugi-ocenochnaya.html','uslugi-pozharno-tehnicheskaya.html'],ic:IC.land,cardText:'Границы участков, наложения, реестровые ошибки, раздел земли и сервитуты.'},
+/* Организация */
+function organizaciyaPage() {
+  const trail = [{ t: 'Главная', href: 'index.html' }, { t: 'Организация' }];
+  const experts = [['Соколов В. А.','Строительно-техническая','14 лет · 600+ экспертиз','СВ'],['Морозова Е. И.','Оценочная, кадастровая','11 лет · 900+ экспертиз','ЕМ'],['Гаврилов П. С.','Почерковедческая, ТКЭД','16 лет · 1200+ экспертиз','ПГ'],['Титов А. Н.','Автотехническая, трасология','9 лет · 500+ экспертиз','АТ'],['Белова О. В.','Экономическая, финансовая','12 лет · 400+ экспертиз','ОБ'],['Кузнецов Д. М.','Инженерно-техническая','13 лет · 550+ экспертиз','ДК']];
+  const faqSub = (FAQ.find(g => g.label === 'Организация и эксперты') || { items: [] }).items.slice(0, 6);
+  const main = `
+<section class="sec"><div class="wrap"><div class="prose narrow"><h1>О центре «Независимая Экспертиза»</h1>
+  <p class="lead mt-4">${SITE.legal} — экспертное учреждение полного цикла. Проводим судебные и досудебные экспертизы, независимые исследования и лабораторные испытания с 2014 года.</p>
+  <p>Центр — член Торгово-промышленной палаты г. Москвы. Офисы в Москве и Краснодаре, работаем по всей России. Заключения оформляются по 73-ФЗ и принимаются судами всех инстанций.</p></div>
+  <div class="stats mt-8"><div><div class="stat__n tnum">2014</div><div class="stat__l">год основания</div></div><div><div class="stat__n tnum">12 386</div><div class="stat__l">экспертиз</div></div><div><div class="stat__n tnum">85</div><div class="stat__l">регионов</div></div><div><div class="stat__n tnum">50</div><div class="stat__l">экспертов</div></div></div>
+</div></section>
+<section class="sec sec--tight" id="eksperty" style="background:var(--white)"><div class="wrap"><div class="sec-head"><span class="eyebrow">Команда</span><h2>Эксперты</h2></div>
+  <div class="experts">${experts.map(e=>`<div class="expert"><div class="expert__ph">${e[3]}</div><h4>${e[0]}</h4><div class="spec">${e[1]}</div><div class="meta">${e[2]}</div></div>`).join('')}</div>
+</div></section>
+<section class="sec" id="docs"><div class="wrap"><div class="sec-head"><span class="eyebrow">Документы</span><h2>Лицензии, свидетельства и сертификаты</h2><p>Нажмите на документ, чтобы увеличить.</p></div>
+  <div class="docs">${Array.from({length:18},(_,i)=>`<div class="doc"><img src="assets/certificates/doki_${i+1}.jpg" alt="Документ ${i+1}" loading="lazy"></div>`).join('')}</div>
+</section>
+<section class="sec sec--tight" id="otzyvy" style="background:var(--white)"><div class="wrap"><div class="sec-head"><span class="eyebrow">Отзывы</span><h2>Отзывы и рекомендации</h2></div>
+  <div class="cards">${[['Адвокатское бюро, Москва','Заключение по строительному спору выдержало проверку в апелляции. Эксперт чётко ответил на вопросы суда.'],['Юрдепартамент застройщика','Оперативно провели экспертизу объёмов работ, помогли обосновать позицию по контракту.'],['Частный клиент','Почерковедческая экспертиза помогла оспорить поддельную расписку. Спасибо за подробное заключение.']].map(o=>`<div class="panel"><p>«${o[1]}»</p><p class="small muted mt-4">— ${o[0]}</p></div>`).join('')}</div>
+</div></section>
+<section class="sec"><div class="wrap"><div class="sec-head"><h2>Частые вопросы</h2></div>${faqAccordion(faqSub)}</div></section>
+${ctaBand()}`;
+  return shell({ file: 'organizaciya.html', title: `О центре — 12 386 экспертиз, член ТПП Москвы | ${SITE.name}`, desc: 'АНО ИЦ «Независимая Экспертиза»: с 2014 года, 12 386 экспертиз, 50 экспертов, член ТПП Москвы. Эксперты, лицензии и сертификаты, отзывы.', active: 'organizaciya.html', trail, main });
+}
 
-{file:'uslugi-pozharno-tehnicheskaya.html',crumb:'Пожарно-техническая',title:'Пожарно-техническая экспертиза',
- h1:'Пожарно-техническая экспертиза',p1:30000,p2:45000,term:'от 10 рабочих дней',
- desc:'Пожарно-техническая экспертиза в Москве: очаг и причина пожара, нарушения пожарной безопасности, ущерб. От 30 000 ₽.',
- answer:'<strong>Пожарно-техническая экспертиза</strong> устанавливает очаг и техническую причину пожара, механизм его развития, соблюдение требований пожарной безопасности и размер ущерба. Назначается по спорам со страховыми, при установлении виновного и признаков поджога. Эксперт исследует место, электросети и материалы. Стоимость — от 30 000 ₽, срок от 10 рабочих дней.',
- when:['Спор со страховой компанией по пожару','Установление виновного в возгорании','Подозрение на поджог','Короткое замыкание и аварийный режим сети','Нарушение требований пожарной безопасности','Оценка ущерба от пожара'],
- core:['Очаг пожара','Техническая причина возгорания','Путь и механизм распространения огня','Соблюдение требований пожарной безопасности','Признаки поджога или аварийного режима сети'],
- norms:['123-ФЗ «Технический регламент о требованиях пожарной безопасности»','69-ФЗ «О пожарной безопасности»','73-ФЗ «О государственной судебно-экспертной деятельности»'],
- caseText:'Пожар на складе, страховая отказала в выплате. Исследование установило причину — аварийный режим работы электросети, а не нарушение правил хранения. Страховая произвела выплату.',
- faq:[{q:'Как устанавливают причину пожара?',a:'Эксперт исследует очаговые признаки, состояние электросети и материалов, изучает протоколы и фотографии. Вывод обосновывается совокупностью признаков.'},
- {q:'Сколько стоит пожарно-техническая экспертиза?',a:'От 30 000 ₽ досудебно и от 45 000 ₽ для суда. Цена зависит от площади и сложности объекта.'},
- {q:'Можно ли оспорить отказ страховой?',a:'Да. Заключение о технической причине пожара — основание для пересмотра решения и взыскания выплаты.'},
- {q:'Что нужно для экспертизы?',a:'Доступ к месту пожара или его материалам: акт, протоколы, фотографии, данные об электросети.'},
- {q:'Сколько времени занимает?',a:'От 10 рабочих дней с учётом осмотра и лабораторных исследований.'}],
- related:['uslugi-stroitelnaya.html','uslugi-ocenochnaya.html','uslugi-zemleustroitelnaya.html'],ic:IC.fire,cardText:'Очаг и причина пожара, нарушения пожарной безопасности, размер ущерба.'}
+/* Контакты */
+function kontaktyPage() {
+  const trail = [{ t: 'Главная', href: 'index.html' }, { t: 'Контакты' }];
+  function cityBlock(key) {
+    const c = SITE.cities[key];
+    return `<div class="city-block${key === 'moscow' ? ' hl' : ''}" data-city="${key}"><h3>${c.name}</h3>
+      <div class="contact-row">${ic('pin', 22)}<div><b>Адрес</b><span>${c.addr}<br>${c.metro}</span></div></div>
+      <div class="contact-row">${ic('phone', 22)}<div><b>Телефон</b><span><a href="tel:${SITE.phoneRaw}">${c.phone}</a></span></div></div>
+      <div class="contact-row">${ic('mail', 22)}<div><b>E-mail</b><span><a href="mailto:${SITE.email}">${SITE.email}</a></span></div></div>
+      <div class="contact-row">${ic('clock', 22)}<div><b>Часы работы</b><span>${c.hours}</span></div></div>
+      <div class="ph mt-4" style="height:200px">Схема проезда · ${c.name}</div></div>`;
+  }
+  const main = `
+<section class="sec"><div class="wrap"><div class="prose narrow"><h1>Контакты</h1><p class="lead mt-4">Два офиса — в Москве и Краснодаре. Переключатель города в шапке подсвечивает нужный блок. Позвоните или оставьте заявку, консультация бесплатна.</p></div>
+  <div class="contact-grid mt-8">${cityBlock('moscow')}${cityBlock('krasnodar')}</div>
+  <div id="rekvizity" class="panel mt-8"><h3>Реквизиты</h3><div class="prose mt-4"><p>${SITE.legal}</p><p>ИНН ${SITE.inn} · КПП ${SITE.kpp} · ОГРН ${SITE.ogrn}</p><p>Юридический адрес: 123060, Москва, ул. Маршала Бирюзова, д. 32, к. 1</p><p>Генеральный директор: ${SITE.director}</p><p>Член Торгово-промышленной палаты г. Москвы.</p></div></div>
+  <div class="mt-8"><h2>Оставить заявку</h2>${formHTML('vnesud')}</div>
+</div></section>`;
+  return shell({ file: 'kontakty.html', title: `Контакты — Москва и Краснодар | ${SITE.name}`, desc: 'Контакты центра «Независимая Экспертиза»: офисы в Москве (Никитский бульвар, 8а) и Краснодаре. Телефон 8 800 200-80-35, реквизиты, форма заявки.', active: 'kontakty.html', trail, main });
+}
+
+/* Заявка + успех */
+function zayavkaPage() {
+  const trail = [{ t: 'Главная', href: 'index.html' }, { t: 'Оставить заявку' }];
+  const main = `<section class="sec"><div class="wrap"><div class="prose narrow"><h1>Оставить заявку</h1><p class="lead mt-4">Выберите сценарий, заполните форму — эксперт свяжется, уточнит вопросы и оценит стоимость и срок. Это демонстрационный прототип: данные не отправляются.</p></div><div class="mt-8" style="max-width:600px">${formHTML('sud')}</div></div></section>`;
+  return shell({ file: 'zayavka.html', title: `Оставить заявку на экспертизу | ${SITE.name}`, desc: 'Оставьте заявку на судебную или досудебную экспертизу либо рецензию. Эксперт перезвонит и оценит стоимость и срок.', active: '', trail, main });
+}
+function otraslPage() {
+  const trail = [{ t: 'Главная', href: 'index.html' }, { t: 'Отрасли' }];
+  const ind = [['Строительство и девелопмент','build'],['Энергетика','bolt'],['Машиностроение','gear'],['Транспорт и логистика','car'],['Информационные технологии','chip'],['Государственный сектор','shield'],['ЖКХ и управление недвижимостью','build'],['Финансовый сектор','chart']];
+  const main = `<section class="sec"><div class="wrap"><div class="prose narrow"><h1>Экспертиза по отраслям</h1><div class="answer mt-4">Для каждой отрасли — свой набор экспертиз и типовых споров. Строительство, энергетика, машиностроение, транспорт, ИТ, госсектор, ЖКХ и финансы. Подберём вид исследования под вашу задачу.</div></div>
+  <div class="dirs mt-8">${ind.map(i=>`<article class="dir"><div class="dir__ic">${ic(i[1],28)}</div><h3>${i[0]}</h3><div class="dir__ex"><a href="ekspertizy.html">Виды экспертиз для отрасли →</a></div></article>`).join('')}</div>
+</div></section>${ctaBand()}`;
+  return shell({ file: 'otrasli.html', title: `Экспертиза по отраслям | ${SITE.name}`, desc: 'Экспертизы по отраслям: строительство, энергетика, машиностроение, транспорт, ИТ, госсектор, ЖКХ, финансы.', active: 'otrasli.html', trail, main });
+}
+
+/* FAQ страница */
+function faqPage() {
+  const trail = [{ t: 'Главная', href: 'index.html' }, { t: 'Частые вопросы' }];
+  const total = FAQ.reduce((n, g) => n + g.items.length, 0);
+  const nav = FAQ.map((g, i) => `<a href="#f${i}">${g.label}</a>`).join('');
+  const blocks = FAQ.map((g, i) => `<div id="f${i}" data-search-group style="margin-bottom:32px"><h2>${g.label}</h2><div class="faq mt-4">${g.items.map(f => `<details data-search-item data-name="${esc(f.q)}"><summary>${esc(f.q)}</summary><div class="a">${esc(f.a)}</div></details>`).join('')}</div></div>`).join('');
+  const main = `<section class="sec"><div class="wrap"><div class="prose narrow"><h1>Частые вопросы</h1><p class="lead mt-4">${total} вопросов и ответов по видам экспертиз, стоимости, срокам и судебному процессу. Тот же материал использует виджет-помощник.</p></div>
+  <div style="display:grid;grid-template-columns:240px 1fr;gap:40px;margin-top:32px" class="ek-layout">
+    <aside class="aside"><input id="type-search" type="search" placeholder="Поиск по вопросам…" style="width:100%;height:44px;border:1px solid var(--shellstone);border-radius:4px;padding:0 14px;margin-bottom:16px"><nav style="display:flex;flex-direction:column;gap:4px;font-size:14px">${nav}</nav></aside>
+    <div>${blocks}</div>
+  </div></div></section>${ctaBand()}`;
+  return shell({ file: 'faq.html', title: `Частые вопросы об экспертизе — ${total} ответов | ${SITE.name}`, desc: `${total} ответов на частые вопросы о судебной и досудебной экспертизе: стоимость, сроки, процесс, виды экспертиз.`, active: '', trail, main });
+}
+function politikaPage() {
+  const trail = [{ t: 'Главная', href: 'index.html' }, { t: 'Политика конфиденциальности' }];
+  const main = `<section class="sec"><div class="wrap"><div class="prose"><h1>Политика конфиденциальности</h1>
+  <p class="mt-4">Демонстрационный прототип. Персональные данные не собираются и не передаются. На боевом сайте обработка ведётся оператором ${SITE.legal} в соответствии с 152-ФЗ «О персональных данных».</p>
+  <h2>Какие данные обрабатываются</h2><ul>${li(['Имя и контакты из формы заявки','Описание задачи','Технические данные посещения'])}</ul>
+  <h2>Цели</h2><ul>${li(['Ответ на обращение и консультация','Заключение и исполнение договора','Информирование о статусе'])}</ul>
+  <p>Пользователь вправе отозвать согласие, направив обращение на ${SITE.email}.</p></div></div></section>`;
+  return shell({ file: 'politika.html', title: `Политика конфиденциальности | ${SITE.name}`, desc: 'Политика обработки персональных данных.', active: '', trail, main });
+}
+function kartaSaytaPage() {
+  const trail = [{ t: 'Главная', href: 'index.html' }, { t: 'Карта сайта' }];
+  const secs = MENU.map(m => {
+    let subs = m.mega ? GROUPS.map(g => `<li><a href="${g.slug}.html">${g.name}</a></li>`).join('') : (m.sub ? m.sub.map(s => `<li><a href="${s[1]}">${s[0]}</a></li>`).join('') : '');
+    return `<div><h3><a href="${m.href}">${m.t}</a></h3><ul class="prose mt-4">${subs}</ul></div>`;
+  }).join('');
+  const main = `<section class="sec"><div class="wrap"><h1>Карта сайта</h1><div class="cards mt-8">${secs}<div><h3>Ещё</h3><ul class="prose mt-4"><li><a href="stoimost.html">Стоимость и сроки</a></li><li><a href="faq.html">Частые вопросы</a></li><li><a href="keysy.html">Кейсы</a></li><li><a href="zayavka.html">Оставить заявку</a></li><li><a href="politika.html">Политика конфиденциальности</a></li></ul></div></div></div></section>`;
+  return shell({ file: 'karta-sayta.html', title: `Карта сайта | ${SITE.name}`, desc: 'Карта сайта.', active: '', trail, main });
+}
+
+/* ---------- Стандалон-услуги ---------- */
+const STANDALONE_SVC = [
+  { file:'pocherkovedcheskaya.html', group:'Криминалистическая', groupHref:'kriminalisticheskaya-ekspertiza.html', crumb:'Почерковедческая', from:15000, term:'5–10 рабочих дней',
+    h1:'Почерковедческая экспертиза', desc:'Почерковедческая экспертиза подписи и рукописи: установление исполнителя, подделки, подражания. От 15 000 ₽.',
+    answer:'Почерковедческая экспертиза устанавливает исполнителя подписи или рукописной записи, факт подражания и необычные условия выполнения. Назначается по спорам о подлинности договоров, расписок, завещаний и доверенностей. Проводится по оригиналам, при их отсутствии — по копиям с ограничениями. Стоимость — от 15 000 ₽, срок 5–10 рабочих дней.',
+    when:['Оспаривание подписи в договоре или расписке','Сомнения в подлинности завещания','Подозрение на подделку или подражание','Наследственные и трудовые споры'],
+    q:['Кем выполнена подпись или запись?','Одним или разными лицами выполнены записи?','Выполнена ли подпись с подражанием?','В обычных или необычных условиях сделана запись?'],
+    norms:['73-ФЗ «О государственной судебно-экспертной деятельности»','Методики судебного почерковедения (РФЦСЭ Минюста)','ст. 307 УК РФ'],
+    faq:(FAQ.find(g=>g.label==='Криминалистическая')||{items:[]}).items.slice(0,5),
+    related:[['Давность документа','kriminalisticheskaya-ekspertiza.html'],['Технико-криминалистическая','kriminalisticheskaya-ekspertiza.html'],['Лингвистическая','kriminalisticheskaya-ekspertiza.html']] },
+  { file:'kadastrovaya-stoimost.html', group:'Оценочная', groupHref:'ocenochnaya-ekspertiza.html', crumb:'Кадастровая стоимость', from:15000, term:'от 5 рабочих дней',
+    h1:'Оспаривание кадастровой стоимости', desc:'Экспертиза для оспаривания кадастровой стоимости недвижимости и земли. Снижение налога, от 15 000 ₽.',
+    answer:'Экспертиза определяет рыночную стоимость объекта и сопоставляет её с кадастровой. Когда кадастровая стоимость завышена, она увеличивает налог на имущество и земельный налог. По отчёту стоимость пересматривают через комиссию или суд, а налоговую базу пересчитывают. Стоимость исследования — от 15 000 ₽, срок от 5 рабочих дней.',
+    when:['Кадастровая стоимость выше рыночной','Завышенный налог на имущество или землю','Подготовка к оспариванию в суде или комиссии'],
+    q:['Какова рыночная стоимость объекта?','Насколько кадастровая стоимость отличается от рыночной?','Имеются ли ошибки в определении кадастровой стоимости?'],
+    norms:['135-ФЗ «Об оценочной деятельности»','237-ФЗ «О государственной кадастровой оценке»','Федеральные стандарты оценки (ФСО)'],
+    faq:(FAQ.find(g=>g.label==='Оценочная')||{items:[]}).items.slice(0,5),
+    related:[['Оценка недвижимости','ocenochnaya-ekspertiza.html'],['Земельные участки','ocenochnaya-ekspertiza.html'],['Ущерб от залива','ocenochnaya-ekspertiza.html']] },
+  { file:'avtotehnicheskaya.html', group:'Транспорт', groupHref:'ekspertiza-transporta.html', crumb:'Автотехническая', from:15000, term:'5–12 рабочих дней',
+    h1:'Автотехническая и транспортно-трасологическая экспертиза', desc:'Автотехническая экспертиза: обстоятельства ДТП, стоимость ремонта, трасология, УТС. От 15 000 ₽.',
+    answer:'Автотехническая экспертиза восстанавливает обстоятельства и механизм ДТП, оценивает техническое состояние автомобиля, стоимость восстановительного ремонта и утрату товарной стоимости. Назначается по спорам о вине, при занижении страховой выплаты и по качеству ремонта. Стоимость — от 15 000 ₽, срок 5–12 рабочих дней.',
+    when:['Спор о вине в ДТП','Занижение выплаты страховой','Скрытые повреждения после аварии','Расчёт утраты товарной стоимости'],
+    q:['Каков механизм ДТП?','Была ли техническая возможность избежать ДТП?','Какова стоимость восстановительного ремонта?','Соответствуют ли повреждения обстоятельствам?'],
+    norms:['73-ФЗ','Методика Минюста 2018 (расчёт по ОСАГО)','Правила дорожного движения РФ'],
+    faq:(FAQ.find(g=>g.label==='Автотехническая')||{items:[]}).items.slice(0,5),
+    related:[['Оценка автотранспорта','ocenochnaya-ekspertiza.html'],['Кораблестроения','ekspertiza-transporta.html'],['Летательных аппаратов','ekspertiza-transporta.html']] }
 ];
 
-/* ---------------- Основные страницы ---------------- */
-function cardsGrid(list){
-  return '<div class="grid-3">'+list.map(s=>`<article class="card">
-    <div class="card__ic">${s.ic}</div>
-    <h3>${s.crumb}</h3>
-    <p>${s.cardText}</p>
-    <div class="card__meta tnum">от ${money(s.p1)}</div>
-    <a class="link-arrow" href="${s.file}">Подробнее <span class="a">→</span></a>
-  </article>`).join('')+'</div>';
-}
+/* ---------- Сборка ---------- */
+const PAGES = [];
+PAGES.push({ f: 'index.html', h: homePage() });
+PAGES.push({ f: 'ekspertizy.html', h: ekspertizyPage() });
+PAGES.push({ f: 'stoimost.html', h: stoimostPage() });
+PAGES.push({ f: 'goszakupki.html', h: goszakupkiPage() });
+PAGES.push({ f: 'recenzii.html', h: recenziiPage() });
+PAGES.push({ f: 'keysy.html', h: keysyPage() });
+PAGES.push({ f: 'organizaciya.html', h: organizaciyaPage() });
+PAGES.push({ f: 'kontakty.html', h: kontaktyPage() });
+PAGES.push({ f: 'zayavka.html', h: zayavkaPage() });
+PAGES.push({ f: 'otrasli.html', h: otraslPage() });
+PAGES.push({ f: 'faq.html', h: faqPage() });
+PAGES.push({ f: 'politika.html', h: politikaPage() });
+PAGES.push({ f: 'karta-sayta.html', h: kartaSaytaPage() });
+PAGES.push({ f: 'prichiny-zaliva.html', h: zalivPage() });
+GROUPS.forEach(g => PAGES.push({ f: g.slug + '.html', h: pillarPage(g) }));
+STANDALONE_SVC.forEach(s => PAGES.push({ f: s.file, h: servicePage(s) }));
 
-function homePage(){
-  const trust=[
-    ['01','Процессуальная сила','Эксперты предупреждены об ответственности по ст. 307 УК РФ; заключения соответствуют 73-ФЗ.'],
-    ['02','Аттестованные эксперты','Профильное образование, стаж и действующие сертификаты по специальности.'],
-    ['03','Срок и цена в договоре','Фиксируем стоимость и срок заранее, без скрытых доплат по ходу работы.'],
-    ['04','Полная методология','Каждый вывод обоснован, воспроизводим и защищён в судебном заседании.']
-  ];
-  const cases=[
-    ['Строительно-техническая','Спор о качестве фасадных работ на объекте 1 240 м².','Подтверждён ущерб, суд принял заключение.'],
-    ['Автотехническая','Восстановление обстоятельств ДТП при противоречивых показаниях.','Установлена вина второго участника.'],
-    ['Почерковедческая','Оспаривание договора займа на 4,5 млн ₽.','Подпись выполнена другим лицом.']
-  ];
-  const main=`
-<section class="hero"><div class="wrap"><div style="max-width:760px;padding:76px 0 20px">
-  <span class="eyebrow">АНО · Судебная и досудебная экспертиза</span>
-  <h1 style="margin-top:16px">Независимая экспертиза для суда и бизнеса</h1>
-  <p class="hero__lead" style="max-width:56ch">Проводим судебные и досудебные экспертизы по десяткам направлений и готовим заключения, которые выдерживают проверку в суде. 10 лет практики, 12 386 проведённых экспертиз.</p>
-  <div class="hero__actions">
-    <a class="btn btn--primary btn--lg" href="kontakty.html">Заказать экспертизу</a>
-    <a class="btn btn--secondary btn--lg" href="uslugi.html">Виды экспертиз</a>
-  </div>
-  <div class="hero__trust">
-    <span>${IC.shield}Аттестованные эксперты</span>
-    <span>${IC.star}Член ТПП г. Москвы</span>
-    <span>${IC.doc}Заключения для судов всех инстанций</span>
-  </div>
-</div></div></section>
+// удалить старые страницы прошлой сборки
+['uslugi.html','o-tsentre.html','uslugi-stroitelnaya.html','uslugi-pocherkovedcheskaya.html','uslugi-ocenochnaya.html','uslugi-avtotehnicheskaya.html','uslugi-tovarovedcheskaya.html','uslugi-ekonomicheskaya.html','uslugi-zemleustroitelnaya.html','uslugi-pozharno-tehnicheskaya.html'].forEach(f=>{try{fs.unlinkSync(OUT+'/'+f);}catch(e){}});
 
-<section class="section--sm"><div class="wrap"><div class="stats">
-  <div class="stat"><div class="stat__n tnum">10 лет</div><div class="stat__l">в судебной экспертизе</div></div>
-  <div class="stat"><div class="stat__n tnum">12 386</div><div class="stat__l">проведённых экспертиз</div></div>
-  <div class="stat"><div class="stat__n tnum">6 301</div><div class="stat__l">из них судебных</div></div>
-  <div class="stat"><div class="stat__n tnum">50</div><div class="stat__l">штатных экспертов</div></div>
-</div></div></section>
-
-<section class="section section--warm"><div class="wrap">
-  <div class="sec-head"><span class="eyebrow">Виды экспертиз</span><h2>Направления, по которым мы работаем</h2>
-  <p>Каждое заключение готовит профильный аттестованный эксперт. Полный список и цены — на странице «Услуги».</p></div>
-  ${cardsGrid(SERVICES.slice(0,6))}
-  <p class="mt-6"><a class="link-arrow" href="uslugi.html">Все виды экспертиз и цены <span class="a">→</span></a></p>
-</div></section>
-
-<section class="section section--dark"><div class="wrap">
-  <div class="sec-head"><span class="eyebrow">Почему нам доверяют</span><h2>Заключение, которое принимает суд</h2>
-  <p>Мы отвечаем за каждый вывод — процессуально, методически и по срокам.</p></div>
-  <div class="theses">${trust.map(t=>`<div class="thesis"><div class="thesis__n tnum">${t[0]}</div><h4>${t[1]}</h4><p>${t[2]}</p></div>`).join('')}</div>
-</div></section>
-
-<section class="section"><div class="wrap">
-  <div class="sec-head"><span class="eyebrow">Кейсы</span><h2>Экспертизы, решившие спор</h2></div>
-  <div class="grid-3">${cases.map(c=>`<article class="case"><div class="case__tag">${c[0]}</div><div class="case__b"><p>${c[1]}</p><div class="case__res">${c[2]}</div></div></article>`).join('')}</div>
-  <p class="mt-6"><a class="link-arrow" href="keysy.html">Все кейсы <span class="a">→</span></a></p>
-</div></section>
-
-${ctaBand()}`;
-  return shell({file:'index.html',title:`${SITE.name} — судебная и досудебная экспертиза в Москве`,
-    desc:'Независимый центр судебной и досудебной экспертизы в Москве. Строительная, почерковедческая, оценочная, автотехническая и другие экспертизы. 10 лет, 12 386 экспертиз. Заключения для суда.',
-    active:'index.html',main});
-}
-
-function uslugiPage(){
-  const trail=[{t:'Главная',href:'index.html'},{t:'Услуги'}];
-  const rows=PRICE_TABLE.map(r=>{
-    const name=r[3]?`<a href="${r[3]}">${r[0]}</a>`:r[0];
-    return `<tr><th scope="row">${name}</th><td class="num">от ${money(r[1])}</td><td class="num">от ${money(r[2])}</td></tr>`;
-  }).join('');
-  const main=`
-<section class="section"><div class="wrap">
-  <div class="prose" style="max-width:820px">
-    <h1>Виды экспертиз и цены</h1>
-    <div class="answer mt-6">Центр «Независимая Экспертиза» проводит <strong>судебные и досудебные экспертизы</strong> по строительному, криминалистическому, оценочному, инженерному и экономическому направлениям, а также лабораторные исследования. Ниже — каталог с ценами «от» и сроками. Точную стоимость эксперт называет после бесплатной консультации по вашей задаче.</div>
-  </div>
-  <div class="mt-7">${cardsGrid(SERVICES)}</div>
-</div></section>
-
-<section class="section section--warm"><div class="wrap">
-  <div class="sec-head"><span class="eyebrow">Прайс-лист</span><h2>Стоимость экспертиз</h2>
-  <p>Цены указаны как ориентир «от». Итоговая стоимость зависит от числа объектов, вопросов и сроков.</p></div>
-  <div class="tbl-wrap"><table class="price">
-    <thead><tr><th>Вид экспертизы</th><th>Досудебное исследование</th><th>Судебная экспертиза</th></tr></thead>
-    <tbody>${rows}</tbody>
-  </table></div>
-  <p class="price-note">${DISCLAIMER}</p>
-</div></section>
-${ctaBand()}`;
-  return shell({file:'uslugi.html',title:`Виды экспертиз и цены в Москве | ${SITE.name}`,
-    desc:'Каталог судебных и досудебных экспертиз с ценами: строительная, почерковедческая, оценочная, автотехническая, товароведческая, экономическая и другие. Прайс-лист от 5 000 ₽.',
-    active:'uslugi.html',trail,main});
-}
-
-function aboutPage(){
-  const trail=[{t:'Главная',href:'index.html'},{t:'О центре'}];
-  const certs=[];for(let i=1;i<=18;i++)certs.push(`<div class="cert"><img src="assets/certificates/doki_${i}.jpg" alt="Сертификат ${i}" loading="lazy" width="220" height="300"></div>`);
-  const main=`
-<section class="section"><div class="wrap"><div class="prose" style="max-width:820px">
-  <h1>О центре «Независимая Экспертиза»</h1>
-  <p class="lead mt-6">${SITE.legal} — экспертное учреждение полного цикла: судебные и досудебные экспертизы, независимые исследования и лабораторные испытания.</p>
-  <p>Центр работает 10 лет. За это время проведено 12 386 экспертиз, из них 6 301 — судебная, по гражданским, уголовным и арбитражным делам в 85 регионах России. В штате 50 экспертов с профильным образованием и действующими сертификатами.</p>
-  <p>Мы сотрудничаем с судами, адвокатами, страховыми компаниями и государственными органами. Заключения оформляются по 73-ФЗ и принимаются судами всех инстанций. Центр — член Торгово-промышленной палаты г. Москвы.</p>
-</div></div></section>
-
-<section class="section--sm"><div class="wrap"><div class="stats">
-  <div class="stat"><div class="stat__n tnum">10 лет</div><div class="stat__l">на рынке экспертизы</div></div>
-  <div class="stat"><div class="stat__n tnum">12 386</div><div class="stat__l">экспертиз проведено</div></div>
-  <div class="stat"><div class="stat__n tnum">85</div><div class="stat__l">регионов России</div></div>
-  <div class="stat"><div class="stat__n tnum">50</div><div class="stat__l">штатных экспертов</div></div>
-</div></div></section>
-
-<section class="section section--warm" id="certs"><div class="wrap">
-  <div class="sec-head"><span class="eyebrow">Документы</span><h2>Лицензии и сертификаты</h2>
-  <p>Дипломы, свидетельства и сертификаты экспертов. Нажмите, чтобы увеличить.</p></div>
-  <div class="certs">${certs.join('')}</div>
-</div></section>
-
-<section class="section"><div class="wrap"><div class="prose" style="max-width:820px">
-  <h2>Как мы работаем</h2>
-</div>
-  <div class="steps mt-6">
-    <div class="step"><h4>Заявка</h4><p>Опишите задачу по телефону или через форму. Консультация бесплатна.</p></div>
-    <div class="step"><h4>Оценка</h4><p>Эксперт определяет вопросы, стоимость и срок, вы получаете договор.</p></div>
-    <div class="step"><h4>Исследование</h4><p>Проводим осмотр, измерения и лабораторные работы по методикам.</p></div>
-    <div class="step"><h4>Заключение</h4><p>Выдаём обоснованное заключение для суда или досудебного урегулирования.</p></div>
-  </div>
-</div></section>
-${ctaBand()}`;
-  return shell({file:'o-tsentre.html',title:`О центре — 10 лет, 12 386 экспертиз | ${SITE.name}`,
-    desc:'АНО ИЦ «Независимая Экспертиза»: 10 лет работы, 12 386 экспертиз, 50 экспертов, член ТПП Москвы. Лицензии и сертификаты, порядок работы.',
-    active:'o-tsentre.html',trail,main});
-}
-
-function casesPage(){
-  const trail=[{t:'Главная',href:'index.html'},{t:'Кейсы'}];
-  const cases=[
-    ['Строительно-техническая','Спор с подрядчиком','Заказчик оспаривал объём и стоимость фасадных работ на объекте 1 240 м². Обмеры и расчёты выявили завышение объёмов.','Суд взыскал разницу с подрядчика.'],
-    ['Почерковедческая','Оспаривание займа','Ответчик по договору займа на 4,5 млн ₽ отрицал свою подпись. Сравнительное исследование образцов дало однозначный вывод.','Подпись выполнена другим лицом, во взыскании отказано.'],
-    ['Автотехническая','Спор о вине в ДТП','Участники ДТП давали противоречивые показания. Трасологическое исследование восстановило траектории движения.','Установлена вина второго участника, выплата пересмотрена.'],
-    ['Оценочная','Кадастровая стоимость','Кадастровая стоимость участка почти вдвое превышала рыночную, что завышало налог.','Стоимость снижена, налоговая база пересчитана.'],
-    ['Экономическая','Вывод активов','Корпоративный спор о выводе средств через цепочку сделок с аффилированными лицами.','Подтверждён вывод активов, сумма взыскана в пользу общества.'],
-    ['Пожарно-техническая','Отказ страховой','Страховая отказала в выплате за пожар на складе, ссылаясь на нарушение хранения.','Причина — аварийный режим сети; страховая произвела выплату.']
-  ];
-  const main=`
-<section class="section"><div class="wrap"><div class="prose" style="max-width:820px">
-  <h1>Выполненные экспертизы</h1>
-  <div class="answer mt-6">Примеры экспертиз из практики центра по разным направлениям. Каждый кейс — реальная задача и результат, который повлиял на исход спора. Детали дел не раскрываются в силу конфиденциальности.</div>
-</div>
-  <div class="grid-3 mt-7">${cases.map(c=>`<article class="case"><div class="case__tag">${c[0]}</div><div class="case__b"><div class="meta">${c[1]}</div><p>${c[2]}</p><div class="case__res">${c[3]}</div></div></article>`).join('')}</div>
-</div></section>
-${ctaBand()}`;
-  return shell({file:'keysy.html',title:`Кейсы — выполненные экспертизы | ${SITE.name}`,
-    desc:'Примеры выполненных судебных и досудебных экспертиз центра «Независимая Экспертиза»: строительные, почерковедческие, автотехнические, оценочные, экономические, пожарные.',
-    active:'keysy.html',trail,main});
-}
-
-function contactsPage(){
-  const trail=[{t:'Главная',href:'index.html'},{t:'Контакты'}];
-  const options=PRICE_TABLE.filter(r=>r[3]).map(r=>`<option>${r[0]}</option>`).join('')+'<option>Другая / не знаю</option>';
-  const main=`
-<section class="section"><div class="wrap">
-  <div class="prose" style="max-width:820px"><h1>Контакты</h1>
-  <p class="lead mt-6">Позвоните или оставьте заявку — эксперт перезвонит, уточнит задачу и оценит стоимость и срок. Консультация бесплатна.</p></div>
-  <div class="contact-grid mt-7">
-    <div>
-      <div class="contact-list">
-        <div class="contact-item">${IC.pin}<div><b>Адрес</b><span>${SITE.addr}<br>${SITE.metro}</span></div></div>
-        <div class="contact-item">${IC.phone}<div><b>Телефоны</b><span><a href="tel:${SITE.phone800Raw}">${SITE.phone800}</a> — бесплатно по РФ<br><a href="tel:${SITE.phoneMainRaw}">${SITE.phoneMain}</a></span></div></div>
-        <div class="contact-item">${IC.mail}<div><b>Почта</b><span><a href="mailto:${SITE.email}">${SITE.email}</a></span></div></div>
-        <div class="contact-item">${IC.clock}<div><b>Часы работы</b><span>${SITE.hours}</span></div></div>
-      </div>
-      <div class="map mt-6"><iframe title="Карта проезда" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="https://maps.google.com/maps?q=%D0%9C%D0%BE%D1%81%D0%BA%D0%B2%D0%B0%2C%20%D0%9D%D0%B8%D0%BA%D0%B8%D1%82%D1%81%D0%BA%D0%B8%D0%B9%20%D0%B1%D1%83%D0%BB%D1%8C%D0%B2%D0%B0%D1%80%2C%208%D0%B0&output=embed"></iframe></div>
-    </div>
-    <div>
-      <h2 style="font-size:1.5rem">Оставить заявку</h2>
-      <form class="form grid2 mt-6" data-request novalidate>
-        <div class="field"><label for="f-name">Имя</label><input id="f-name" name="name" type="text" required></div>
-        <div class="field"><label for="f-phone">Телефон</label><input id="f-phone" name="phone" type="tel" required placeholder="+7 ___ ___-__-__"></div>
-        <div class="field full"><label for="f-type">Вид экспертизы</label><select id="f-type" name="type">${options}</select></div>
-        <div class="field full"><label for="f-msg">Кратко о задаче</label><textarea id="f-msg" name="message" placeholder="Что случилось и что нужно установить"></textarea></div>
-        <label class="form__consent full"><input type="checkbox" required> Согласен на обработку персональных данных в соответствии с <a href="politika.html">политикой конфиденциальности</a>.</label>
-        <div class="full"><button class="btn btn--primary btn--lg" type="submit">Отправить заявку</button></div>
-        <div class="form__ok full">Заявка принята. Эксперт свяжется с вами в рабочее время (${SITE.hours}).</div>
-      </form>
-    </div>
-  </div>
-</div></section>`;
-  return shell({file:'kontakty.html',title:`Контакты — заказать экспертизу в Москве | ${SITE.name}`,
-    desc:'Контакты центра «Независимая Экспертиза»: Москва, Никитский бульвар, 8а. Телефон 8 800 200-80-35. Оставьте заявку на экспертизу — консультация бесплатна.',
-    active:'kontakty.html',trail,main});
-}
-
-function privacyPage(){
-  const trail=[{t:'Главная',href:'index.html'},{t:'Политика конфиденциальности'}];
-  const main=`<section class="section"><div class="wrap"><div class="prose">
-    <h1>Политика конфиденциальности</h1>
-    <p class="mt-6">Настоящая политика определяет порядок обработки персональных данных пользователей сайта ${SITE.domain}, оператором которых является ${SITE.legal}.</p>
-    <h2>Какие данные мы собираем</h2>
-    <ul><li>Имя и контактные данные (телефон, электронная почта), которые вы указываете в форме заявки.</li><li>Описание задачи, которое вы сообщаете при обращении.</li><li>Технические данные о посещении (при использовании сервисов аналитики).</li></ul>
-    <h2>Цели обработки</h2>
-    <ul><li>Ответ на заявку и консультация по услугам центра.</li><li>Заключение и исполнение договора на проведение экспертизы.</li><li>Информирование о статусе обращения.</li></ul>
-    <h2>Условия обработки</h2>
-    <p>Данные обрабатываются с согласия пользователя, не передаются третьим лицам без законных оснований и хранятся не дольше, чем это необходимо для указанных целей. Пользователь вправе отозвать согласие, направив обращение на ${SITE.email}.</p>
-    <p>Обработка ведётся в соответствии с 152-ФЗ «О персональных данных».</p>
-  </div></div></section>`;
-  return shell({file:'politika.html',title:`Политика конфиденциальности | ${SITE.name}`,
-    desc:'Политика обработки персональных данных сайта rosbars.ru.',active:'',trail,main});
-}
-
-/* ---------------- Сборка ---------------- */
-const PAGES=[];
-PAGES.push({file:'index.html',html:homePage()});
-PAGES.push({file:'uslugi.html',html:uslugiPage()});
-PAGES.push({file:'o-tsentre.html',html:aboutPage()});
-PAGES.push({file:'keysy.html',html:casesPage()});
-PAGES.push({file:'kontakty.html',html:contactsPage()});
-PAGES.push({file:'politika.html',html:privacyPage()});
-SERVICES.forEach(s=>PAGES.push({file:s.file,html:servicePage(s)}));
-
-PAGES.forEach(p=>{fs.writeFileSync(require('path').join(OUT,p.file),p.html,'utf8');});
-console.log('Собрано страниц: '+PAGES.length);
-PAGES.forEach(p=>console.log('  '+p.file));
+const seen = {};
+PAGES.forEach(p => { if (seen[p.f]) return; seen[p.f] = 1; fs.writeFileSync(require('path').join(OUT, p.f), p.h, 'utf8'); });
+console.log('Собрано страниц: ' + Object.keys(seen).length);
+Object.keys(seen).forEach(f => console.log('  ' + f));

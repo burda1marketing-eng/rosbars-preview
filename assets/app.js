@@ -1,184 +1,266 @@
-/* АНО ИЦ «Независимая Экспертиза» — интерактив: меню, галерея, формы, ИИ-помощник */
+/* rosbars MVP-прототип — клиентский JS (без сервера, без localStorage). */
 (function () {
   'use strict';
+  var $ = function (s, c) { return (c || document).querySelector(s); };
+  var $$ = function (s, c) { return Array.prototype.slice.call((c || document).querySelectorAll(s)); };
+  function esc(t){var d=document.createElement('div');d.textContent=t;return d.innerHTML;}
 
-  /* ---------- Мобильное меню ---------- */
-  var burger = document.querySelector('.burger');
-  var mnav = document.querySelector('.mnav');
-  if (burger && mnav) {
-    burger.addEventListener('click', function () {
-      var open = mnav.classList.toggle('open');
-      burger.setAttribute('aria-expanded', open ? 'true' : 'false');
+  /* ---- Sticky header shrink ---- */
+  var hdr = $('.hdr');
+  if (hdr) window.addEventListener('scroll', function () { hdr.classList.toggle('shrink', window.scrollY > 120); }, { passive: true });
+
+  /* ---- Мегаменю «Экспертизы» ---- */
+  var megaBtn = $('#mega-btn'), mega = $('#mega');
+  if (megaBtn && mega) {
+    var wrap = megaBtn.closest('li');
+    function openMega(o){ mega.classList.toggle('open', o); megaBtn.setAttribute('aria-expanded', o?'true':'false'); }
+    wrap.addEventListener('mouseenter', function(){ openMega(true); });
+    wrap.addEventListener('mouseleave', function(){ openMega(false); });
+    megaBtn.addEventListener('click', function(e){ e.preventDefault(); openMega(!mega.classList.contains('open')); });
+    $$('.mega__groups button', mega).forEach(function (b) {
+      b.addEventListener('mouseenter', function () { switchGroup(b.getAttribute('data-g')); });
+      b.addEventListener('click', function () { switchGroup(b.getAttribute('data-g')); });
     });
+    function switchGroup(g){
+      $$('.mega__groups button', mega).forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-g')===g); });
+      $$('.mega__panel', mega).forEach(function(p){ p.classList.toggle('hide', p.getAttribute('data-g')!==g); });
+    }
+    document.addEventListener('keydown', function(e){ if(e.key==='Escape') openMega(false); });
   }
 
-  /* ---------- Галерея сертификатов (lightbox) ---------- */
-  var certs = Array.prototype.slice.call(document.querySelectorAll('.cert'));
-  if (certs.length) {
-    var lb = document.createElement('div');
-    lb.className = 'lightbox';
-    lb.innerHTML =
-      '<button class="lightbox__close" aria-label="Закрыть">×</button>' +
-      '<button class="lightbox__nav lightbox__prev" aria-label="Предыдущий">‹</button>' +
-      '<img alt="Сертификат">' +
-      '<button class="lightbox__nav lightbox__next" aria-label="Следующий">›</button>';
-    document.body.appendChild(lb);
-    var lbImg = lb.querySelector('img');
-    var idx = 0;
-    var srcs = certs.map(function (c) {
-      var im = c.querySelector('img');
-      return im ? (im.getAttribute('data-full') || im.src) : '';
-    });
-    function show(i) { idx = (i + srcs.length) % srcs.length; lbImg.src = srcs[idx]; }
-    function open(i) { show(i); lb.classList.add('open'); document.body.style.overflow = 'hidden'; }
-    function close() { lb.classList.remove('open'); document.body.style.overflow = ''; }
-    certs.forEach(function (c, i) {
-      c.addEventListener('click', function () { open(i); });
-      c.setAttribute('tabindex', '0');
-      c.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(i); } });
-    });
-    lb.querySelector('.lightbox__close').addEventListener('click', close);
-    lb.querySelector('.lightbox__prev').addEventListener('click', function () { show(idx - 1); });
-    lb.querySelector('.lightbox__next').addEventListener('click', function () { show(idx + 1); });
-    lb.addEventListener('click', function (e) { if (e.target === lb) close(); });
-    document.addEventListener('keydown', function (e) {
-      if (!lb.classList.contains('open')) return;
-      if (e.key === 'Escape') close();
-      if (e.key === 'ArrowLeft') show(idx - 1);
-      if (e.key === 'ArrowRight') show(idx + 1);
-    });
+  /* ---- Мобильное меню ---- */
+  var burger = $('.burger'), mmenu = $('#mmenu');
+  if (burger && mmenu) {
+    burger.addEventListener('click', function(){ mmenu.classList.add('open'); document.body.style.overflow='hidden'; });
+    var mc = $('.mmenu__close', mmenu);
+    if (mc) mc.addEventListener('click', function(){ mmenu.classList.remove('open'); document.body.style.overflow=''; });
+    document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ mmenu.classList.remove('open'); document.body.style.overflow=''; } });
   }
 
-  /* ---------- Формы заявки ---------- */
-  Array.prototype.slice.call(document.querySelectorAll('form[data-request]')).forEach(function (f) {
-    f.addEventListener('submit', function (e) {
-      e.preventDefault();
-      var ok = f.querySelector('.form__ok');
-      if (ok) { ok.classList.add('show'); }
-      f.querySelectorAll('input,textarea,select,button').forEach(function (el) {
-        if (el.type !== 'checkbox') el.value = '';
-        if (el.tagName === 'BUTTON') el.disabled = true;
+  /* ---- Переключатель города ---- */
+  var CITY = {
+    moscow: { name:'Москва', phone:'8 (800) 200-80-35', addr:'119019, Москва, Никитский бульвар, д. 8а' },
+    krasnodar: { name:'Краснодар', phone:'8 (800) 200-80-35', addr:'350000, Краснодар, ул. Красная, д. 176 (филиал)' }
+  };
+  function setCity(key){
+    var c = CITY[key]; if(!c) return;
+    $$('.js-city-phone').forEach(function(e){ e.textContent=c.phone; if(e.tagName==='A') e.href='tel:'+c.phone.replace(/\D/g,''); });
+    $$('.js-city-addr').forEach(function(e){ e.textContent=c.addr; });
+    $$('.city button').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-city')===key); });
+    $$('.city-block').forEach(function(bl){ bl.classList.toggle('hl', bl.getAttribute('data-city')===key); });
+  }
+  $$('.city button').forEach(function(b){ b.addEventListener('click', function(){ setCity(b.getAttribute('data-city')); }); });
+
+  /* ---- Поиск по видам (список ul[data-search]) ---- */
+  var searchInput = $('#type-search');
+  if (searchInput) {
+    var items = $$('[data-search-item]');
+    searchInput.addEventListener('input', function(){
+      var q = this.value.toLowerCase().replace(/ё/g,'е');
+      items.forEach(function(it){
+        var t = (it.getAttribute('data-name')||it.textContent).toLowerCase().replace(/ё/g,'е');
+        it.style.display = (!q || t.indexOf(q)!==-1) ? '' : 'none';
       });
-      if (ok) ok.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      $$('[data-search-group]').forEach(function(gr){
+        var any = $$('[data-search-item]', gr).some(function(x){ return x.style.display!=='none'; });
+        gr.style.display = any ? '' : 'none';
+      });
+    });
+  }
+
+  /* ---- Таблица цен: поиск + фильтр по группе ---- */
+  var priceSearch = $('#price-search'), priceGroup = $('#price-group'), priceTable = $('#price-table');
+  if (priceTable) {
+    function filterPrice(){
+      var q = (priceSearch ? priceSearch.value : '').toLowerCase().replace(/ё/g,'е');
+      var g = priceGroup ? priceGroup.value : '';
+      $$('tbody tr', priceTable).forEach(function(tr){
+        if (tr.classList.contains('price-group-row')) return;
+        var name = (tr.getAttribute('data-name')||'').toLowerCase().replace(/ё/g,'е');
+        var grp = tr.getAttribute('data-group')||'';
+        var ok = (!q || name.indexOf(q)!==-1) && (!g || grp===g);
+        tr.style.display = ok ? '' : 'none';
+      });
+    }
+    if (priceSearch) priceSearch.addEventListener('input', filterPrice);
+    if (priceGroup) priceGroup.addEventListener('change', filterPrice);
+  }
+
+  /* ---- Фильтр кейсов (теги) ---- */
+  var caseFilter = $('#case-filter');
+  if (caseFilter) {
+    var active = [];
+    var counter = $('#case-count');
+    function applyCases(){
+      var cards = $$('[data-case]');
+      var shown = 0;
+      cards.forEach(function(card){
+        var tags = (card.getAttribute('data-tags')||'').split('|');
+        var ok = active.length===0 || active.some(function(a){ return tags.indexOf(a)!==-1; });
+        card.style.display = ok ? '' : 'none';
+        if (ok) shown++;
+      });
+      if (counter) counter.textContent = shown;
+      var empty = $('#case-empty'); if (empty) empty.style.display = shown ? 'none':'block';
+    }
+    $$('.tag', caseFilter).forEach(function(t){
+      t.addEventListener('click', function(){
+        var v = t.getAttribute('data-tag');
+        var i = active.indexOf(v);
+        if (i===-1){ active.push(v); t.classList.add('on'); } else { active.splice(i,1); t.classList.remove('on'); }
+        applyCases();
+      });
+    });
+    var reset = $('#case-reset');
+    if (reset) reset.addEventListener('click', function(){ active=[]; $$('.tag',caseFilter).forEach(function(t){t.classList.remove('on');}); applyCases(); });
+  }
+
+  /* ---- Вкладки формы + предвыбор из URL ---- */
+  $$('form[data-request]').forEach(function (f) {
+    var tabs = $$('.form-tab', f);
+    var scenarioField = $('.js-scenario', f);
+    function setTab(val){
+      tabs.forEach(function(t){ t.classList.toggle('on', t.getAttribute('data-scenario')===val); });
+      if (scenarioField) scenarioField.value = val;
+    }
+    tabs.forEach(function(t){ t.addEventListener('click', function(){ setTab(t.getAttribute('data-scenario')); }); });
+    // preselect from ?scenario= & ?vid=
+    var p = new URLSearchParams(location.search);
+    if (p.get('scenario')) setTab(p.get('scenario'));
+    var vidField = $('.js-vid', f);
+    if (vidField && p.get('vid')) { vidField.value = decodeURIComponent(p.get('vid')); }
+    f.addEventListener('submit', function(e){
+      e.preventDefault();
+      var bad = false;
+      $$('[required]', f).forEach(function(el){
+        var wrap = el.closest('.field');
+        var empty = el.type==='checkbox' ? !el.checked : !el.value.trim();
+        if (wrap) wrap.classList.toggle('err', empty);
+        if (empty) bad = true;
+      });
+      if (bad) return;
+      var ok = $('.form-ok', f);
+      if (ok){ ok.classList.add('show'); ok.scrollIntoView({behavior:'smooth',block:'center'}); }
+      $$('input,textarea,select,button', f).forEach(function(el){ if(el.type!=='checkbox'&&el.tagName!=='SELECT') el.value=''; if(el.tagName==='BUTTON') el.disabled=true; });
     });
   });
 
-  /* ================= ИИ-помощник ================= */
-  var BASE = (window.SITE_BASE || '');
-  function u(p) { return BASE + p; }
-
-  var KB = [
-    { k: ['привет', 'здравств', 'добр', 'hello'], a: 'Здравствуйте. Подскажу по видам экспертиз, срокам и стоимости, помогу оставить заявку. С чего начнём?' },
-    { k: ['вид', 'услуг', 'эксперт', 'какие', 'делаете', 'проводите'], a: 'Центр проводит судебные и досудебные экспертизы: строительно-техническую, почерковедческую, оценочную, автотехническую, товароведческую, экономическую, инженерно-техническую и другие. Полный каталог с ценами — на <a href="' + u('uslugi.html') + '">странице «Услуги»</a>.' },
-    { k: ['строит', 'ремонт', 'залив', 'смет', 'дефект', 'качество работ'], a: 'Строительно-техническая экспертиза: качество и объём работ, дефекты, сметы, причины залива. Досудебное исследование — от 30 000 ₽. Подробнее: <a href="' + u('uslugi-stroitelnaya.html') + '">строительная экспертиза</a>.' },
-    { k: ['почерк', 'подпись', 'подлинн', 'рукопис'], a: 'Почерковедческая экспертиза устанавливает исполнителя подписи или записи. От 15 000 ₽, срок 5–10 дней. Подробнее: <a href="' + u('uslugi-pocherkovedcheskaya.html') + '">почерковедческая экспертиза</a>.' },
-    { k: ['оцен', 'стоимость имущест', 'недвижим', 'ущерб', 'кадастр'], a: 'Оценочная экспертиза: рыночная стоимость недвижимости, оборудования, бизнеса, размер ущерба. От 5 000 ₽ за оценку. Подробнее: <a href="' + u('uslugi-ocenochnaya.html') + '">оценочная экспертиза</a>.' },
-    { k: ['авто', 'дтп', 'машин', 'трасолог', 'транспорт'], a: 'Автотехническая экспертиза: обстоятельства ДТП, стоимость ремонта, трасология. От 15 000 ₽. Подробнее: <a href="' + u('uslugi-avtotehnicheskaya.html') + '">автотехническая экспертиза</a>.' },
-    { k: ['товаровед', 'товар', 'брак', 'соответств'], a: 'Товароведческая экспертиза: качество, соответствие и стоимость товаров. От 15 000 ₽. Подробнее: <a href="' + u('uslugi-tovarovedcheskaya.html') + '">товароведческая экспертиза</a>.' },
-    { k: ['эконом', 'бухгалт', 'финанс', 'ущерб бизнес', 'сделк'], a: 'Экономическая (финансово-бухгалтерская) экспертиза: анализ сделок и расчётов, размер ущерба. От 30 000 ₽. Подробнее: <a href="' + u('uslugi-ekonomicheskaya.html') + '">экономическая экспертиза</a>.' },
-    { k: ['инженер', 'электр', 'лэп', 'энергоаудит', 'счётчик', 'счетчик', 'оборудован'], a: 'Инженерно-техническая экспертиза: сети и коммуникации, электротехника, промышленное оборудование, энергоаудит. От 25 000 ₽. Подробнее: <a href="' + u('uslugi-inzhenernaya.html') + '">инженерно-техническая экспертиза</a>.' },
-    { k: ['цен', 'стоим', 'скольк', 'прайс', 'руб', 'дорог'], a: 'Стоимость зависит от вида экспертизы, числа объектов и сроков. Ориентиры: почерковедческая — от 15 000 ₽, автотехническая — от 15 000 ₽, строительная — от 30 000 ₽. Полный прайс: <a href="' + u('uslugi.html') + '">страница «Услуги»</a>. Точную цену назовёт эксперт после короткой консультации.' },
-    { k: ['срок', 'быстр', 'когда готов', 'сколько дел', 'время'], a: 'Срок зависит от вида: почерковедческая — 5–10 дней, строительная и оценочная — 7–15 дней, сложные комплексные — до 20–30 дней. Точный срок фиксируем в договоре.' },
-    { k: ['заявк', 'заказ', 'оформ', 'обрат', 'консультац', 'связ'], a: 'Оставьте заявку — эксперт перезвонит, уточнит задачу и оценит стоимость и срок. Форма на <a href="' + u('kontakty.html') + '">странице «Контакты»</a> или звоните 8 800 200-80-35 (бесплатно).' },
-    { k: ['суд', 'досудеб', 'разница', 'отлич', 'внесудеб'], a: 'Досудебное исследование заказывает сторона до или вне процесса. Судебная экспертиза назначается определением суда, эксперт предупреждается об ответственности по ст. 307 УК РФ. Проводим оба вида; заключения соответствуют 73-ФЗ.' },
-    { k: ['доверя', 'гарант', 'лиценз', 'аккредит', 'надёжн', 'надежн', 'квалификац', 'опыт'], a: '10 лет работы, 12 386 проведённых экспертиз (6 301 судебная), 50 экспертов, член ТПП Москвы. Эксперты аттестованы, заключения принимают суды всех инстанций. Подробнее и сертификаты: <a href="' + u('o-tsentre.html') + '">о центре</a>.' },
-    { k: ['рецензи', 'оспор', 'заключение эксперт'], a: 'Делаем рецензии на заключения экспертов сторонних организаций — для оспаривания в суде. Стоимость — от 15 000 ₽. Оставьте заявку, и эксперт оценит перспективы.' },
-    { k: ['контакт', 'адрес', 'где наход', 'телефон', 'почта', 'метро', 'время работ', 'график'], a: 'Москва, Никитский бульвар, д. 8а (1 мин от м. Арбатская). Тел.: +7 968 987-87-78, 8 800 200-80-35. Почта: info@rosbars.ru. Пн–Сб, 09:00–19:00. Карта — на <a href="' + u('kontakty.html') + '">странице «Контакты»</a>.' },
-    { k: ['кейс', 'пример', 'практик', 'дел'], a: 'Примеры выполненных экспертиз с результатами — в разделе <a href="' + u('keysy.html') + '">«Кейсы»</a>.' }
-  ];
-
-  var CHIPS = [
-    { t: 'Виды экспертиз', q: 'какие виды экспертиз' },
-    { t: 'Стоимость', q: 'сколько стоит' },
-    { t: 'Сроки', q: 'какие сроки' },
-    { t: 'Оставить заявку', q: 'как оставить заявку' },
-    { t: 'Контакты', q: 'контакты и адрес' }
-  ];
-
-  function norm(s) { return (s || '').toLowerCase().replace(/ё/g, 'е'); }
-  function answer(q) {
-    var t = norm(q), best = null, score = 0;
-    KB.forEach(function (item) {
-      var s = 0;
-      item.k.forEach(function (kw) { if (t.indexOf(norm(kw)) !== -1) s += kw.length; });
-      if (s > score) { score = s; best = item; }
-    });
-    if (best) return best.a;
-    return 'Уточните, пожалуйста, вопрос — по виду экспертизы, стоимости, срокам или заявке. Либо звоните 8 800 200-80-35, консультация бесплатна.';
-  }
-
-  function buildWidget() {
-    var fab = document.createElement('button');
-    fab.className = 'ai-fab';
-    fab.setAttribute('aria-label', 'Открыть консультанта');
-    fab.innerHTML = '<span class="dot"></span><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 11.5a8.5 8.5 0 01-12.3 7.6L3 21l1.9-5.7A8.5 8.5 0 1121 11.5z"/></svg>Консультант';
-
-    var panel = document.createElement('div');
-    panel.className = 'ai-panel';
-    panel.setAttribute('role', 'dialog');
-    panel.setAttribute('aria-label', 'Виртуальный консультант');
-    panel.innerHTML =
-      '<div class="ai-head">' +
-        '<span class="av"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg></span>' +
-        '<span><b>Виртуальный консультант</b><span class="status">на связи</span></span>' +
-        '<button class="ai-close" aria-label="Закрыть">×</button>' +
-      '</div>' +
-      '<div class="ai-body" id="ai-body"></div>' +
-      '<div class="ai-foot"><input id="ai-input" type="text" placeholder="Ваш вопрос…" autocomplete="off"><button id="ai-send" aria-label="Отправить"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 12l16-8-6 16-2-6-8-2z"/></svg></button></div>' +
-      '<div class="ai-note">Виртуальный помощник. Отвечает на типовые вопросы; точную оценку даёт эксперт.</div>';
-
-    document.body.appendChild(fab);
-    document.body.appendChild(panel);
-
-    var body = panel.querySelector('#ai-body');
-    var input = panel.querySelector('#ai-input');
-
-    function msg(text, who) {
-      var m = document.createElement('div');
-      m.className = 'ai-msg ' + who;
-      // Bot answers come from a trusted local KB and may contain links (innerHTML).
-      // User input is untrusted — insert as plain text to avoid XSS.
-      if (who === 'bot') { m.innerHTML = text; } else { m.textContent = text; }
-      body.appendChild(m);
-      body.scrollTop = body.scrollHeight;
-    }
-    function chips() {
-      var wrap = document.createElement('div');
-      wrap.className = 'ai-chips';
-      CHIPS.forEach(function (c) {
-        var b = document.createElement('button');
-        b.className = 'ai-chip'; b.textContent = c.t;
-        b.addEventListener('click', function () { ask(c.q, c.t); });
-        wrap.appendChild(b);
+  /* ---- FAQ: один открыт, первый по умолчанию ---- */
+  $$('.faq').forEach(function(faq){
+    var items = $$('details', faq);
+    if (items[0]) items[0].open = true;
+    items.forEach(function(d){
+      d.addEventListener('toggle', function(){
+        if (d.open) items.forEach(function(o){ if(o!==d) o.open=false; });
       });
-      body.appendChild(wrap);
-      body.scrollTop = body.scrollHeight;
-    }
-    function ask(q, label) {
-      msg(label || q, 'user');
-      setTimeout(function () { msg(answer(q), 'bot'); }, 250);
-    }
-
-    var greeted = false;
-    function openPanel() {
-      panel.classList.add('open'); fab.style.display = 'none';
-      if (!greeted) {
-        greeted = true;
-        msg('Здравствуйте. Я виртуальный консультант центра «Независимая Экспертиза». Помогу разобраться с видом экспертизы, стоимостью и сроками или оставить заявку.', 'bot');
-        chips();
-      }
-      input.focus();
-    }
-    function closePanel() { panel.classList.remove('open'); fab.style.display = 'flex'; }
-
-    fab.addEventListener('click', openPanel);
-    panel.querySelector('.ai-close').addEventListener('click', closePanel);
-    panel.querySelector('#ai-send').addEventListener('click', function () {
-      var v = input.value.trim(); if (!v) return; input.value = ''; ask(v);
     });
-    input.addEventListener('keydown', function (e) {
-      if (e.key === 'Enter') { var v = input.value.trim(); if (!v) return; input.value = ''; ask(v); }
-    });
+  });
+
+  /* ---- Лайтбокс документов ---- */
+  var docs = $$('.doc');
+  if (docs.length) {
+    var lb = document.createElement('div'); lb.className='lightbox';
+    lb.innerHTML='<button class="lb-close" aria-label="Закрыть">×</button><button class="lb-prev" aria-label="Назад">‹</button><img alt="Документ"><button class="lb-next" aria-label="Вперёд">›</button>';
+    document.body.appendChild(lb);
+    var img=lb.querySelector('img'), srcs=docs.map(function(d){var i=d.querySelector('img');return i?i.src:'';}), idx=0;
+    function show(i){idx=(i+srcs.length)%srcs.length;img.src=srcs[idx];}
+    function open(i){show(i);lb.classList.add('open');document.body.style.overflow='hidden';}
+    function close(){lb.classList.remove('open');document.body.style.overflow='';}
+    docs.forEach(function(d,i){d.setAttribute('tabindex','0');d.addEventListener('click',function(){open(i);});d.addEventListener('keydown',function(e){if(e.key==='Enter'){open(i);}});});
+    lb.querySelector('.lb-close').addEventListener('click',close);
+    lb.querySelector('.lb-prev').addEventListener('click',function(){show(idx-1);});
+    lb.querySelector('.lb-next').addEventListener('click',function(){show(idx+1);});
+    lb.addEventListener('click',function(e){if(e.target===lb)close();});
+    document.addEventListener('keydown',function(e){if(!lb.classList.contains('open'))return;if(e.key==='Escape')close();if(e.key==='ArrowLeft')show(idx-1);if(e.key==='ArrowRight')show(idx+1);});
   }
-  buildWidget();
+
+  /* ================= Виджет-помощник (сценарное дерево) ================= */
+  var U = window.SITE_BASE || '';
+  var TREE = {
+    root: { m:'Здравствуйте. Помогу выбрать экспертизу, сориентирую по стоимости и срокам или подскажу, как оспорить чужое заключение. Что вам ближе?',
+      o:[
+        {t:'Нужна экспертиза для суда', go:'sud'},
+        {t:'Не согласен с экспертизой', go:'recenz'},
+        {t:'Сколько это стоит', go:'price'},
+        {t:'Другой вопрос', go:'other'}
+      ]},
+    sud: { m:'По какому направлению нужна экспертиза?',
+      o:[
+        {t:'Строительная (залив, качество работ)', go:'sud_str'},
+        {t:'Оценочная (ущерб, стоимость)', go:'sud_oc'},
+        {t:'Почерковедческая (подпись)', go:'sud_poch'},
+        {t:'Другое направление', go:'sud_other'}
+      ]},
+    sud_str:{ m:'Строительная экспертиза — от 25 000 ₽, срок от 5 рабочих дней. Например, «Экспертиза причин залива». Открыть страницу или сразу оставить заявку?',
+      o:[{t:'Открыть «Причины залива»', link:'prichiny-zaliva.html'},{t:'Все строительные виды', link:'stroitelnaya-ekspertiza.html'},{t:'Оставить заявку', link:'zayavka.html?scenario=sud'}]},
+    sud_oc:{ m:'Оценочная экспертиза — от 8 000 ₽, срок от 3 рабочих дней. Определяем стоимость и размер ущерба.',
+      o:[{t:'Открыть раздел «Оценочная»', link:'ekspertizy.html'},{t:'Оставить заявку', link:'zayavka.html?scenario=sud'}]},
+    sud_poch:{ m:'Почерковедческая экспертиза — от 15 000 ₽, срок 5–10 дней. Устанавливаем исполнителя подписи.',
+      o:[{t:'Оставить заявку', link:'zayavka.html?scenario=sud'},{t:'Все виды экспертиз', link:'ekspertizy.html'}]},
+    sud_other:{ m:'Направлений больше 60 — они собраны в каталоге. Подобрать вид удобно там, либо оставьте заявку и эксперт поможет с формулировкой.',
+      o:[{t:'Каталог экспертиз', link:'ekspertizy.html'},{t:'Оставить заявку', link:'zayavka.html?scenario=sud'}]},
+    recenz:{ m:'Чужое заключение можно оспорить рецензией — эксперт разбирает методические нарушения. На какое заключение нужна рецензия?',
+      o:[{t:'На строительную', link:'recenzii.html'},{t:'На оценочную', link:'recenzii.html'},{t:'На почерковедческую', link:'recenzii.html'},{t:'Перейти в раздел «Рецензии»', link:'recenzii.html'}]},
+    price:{ m:'Стоимость зависит от вида, объёма материалов и сроков. Ориентиры и полная таблица — на странице «Стоимость и сроки».',
+      o:[{t:'Открыть таблицу цен', link:'stoimost.html'},{t:'Рассчитать по моей задаче', link:'zayavka.html?scenario=price'}]},
+    other:{ m:'Оставьте контакт — эксперт перезвонит в рабочее время (Пн–Сб, 09:00–19:00). Или позвоните 8 (800) 200-80-35, звонок бесплатный.',
+      o:[{t:'Оставить заявку', link:'zayavka.html'},{t:'Контакты и адреса', link:'kontakty.html'}]}
+  };
+
+  function buildHelper(){
+    var fab = document.createElement('button');
+    fab.className='hlp-fab'; fab.setAttribute('aria-label','Открыть помощника');
+    fab.innerHTML='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M21 11.5a8.5 8.5 0 01-12.3 7.6L3 21l1.9-5.7A8.5 8.5 0 1121 11.5z"/><path d="M12 7.3l.9 1.9 2.1.3-1.5 1.5.4 2.1-1.9-1-1.9 1 .4-2.1-1.5-1.5 2.1-.3z" fill="currentColor" stroke="none"/></svg>AI-консультант';
+    var panel=document.createElement('div'); panel.className='hlp-panel'; panel.setAttribute('role','dialog'); panel.setAttribute('aria-label','Помощник');
+    panel.innerHTML='<div class="hlp-head"><span class="av"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M21 11.5a8.5 8.5 0 01-12.3 7.6L3 21l1.9-5.7A8.5 8.5 0 1121 11.5z"/></svg></span><span><b>AI-консультант</b><span>Помощник центра · на связи</span></span><button class="hlp-close" aria-label="Закрыть">×</button></div><div class="hlp-body" id="hlp-body"></div><div class="hlp-foot"><button class="hlp-back" id="hlp-back" title="В начало" style="flex-shrink:0">↺</button><input id="hlp-input" type="text" placeholder="Задайте вопрос…" autocomplete="off" style="flex:1;height:40px;border:1px solid var(--shellstone);border-radius:20px;padding:0 14px;font-family:var(--sans);font-size:14px"><button id="hlp-send" aria-label="Отправить" style="flex-shrink:0;width:40px;height:40px;border-radius:50%;background:var(--seal-blue);color:#fff;border:none;cursor:pointer">→</button></div>';
+    document.body.appendChild(fab); document.body.appendChild(panel);
+    var body=$('#hlp-body',panel);
+    function bot(t){var m=document.createElement('div');m.className='hlp-msg bot';m.innerHTML=t;body.appendChild(m);body.scrollTop=body.scrollHeight;}
+    function user(t){var m=document.createElement('div');m.className='hlp-msg user';m.textContent=t;body.appendChild(m);body.scrollTop=body.scrollHeight;}
+    function opts(list){
+      var w=document.createElement('div');w.className='hlp-opts';
+      list.forEach(function(o){
+        var b=document.createElement('button');b.className='hlp-opt';b.textContent=o.t;
+        b.addEventListener('click',function(){
+          user(o.t);
+          if(o.link){ bot('Открываю: <a href="'+U+o.link+'">'+esc(o.t)+'</a>'); setTimeout(function(){location.href=U+o.link;},400); }
+          else if(o.go){ go(o.go); }
+        });
+        w.appendChild(b);
+      });
+      body.appendChild(w);body.scrollTop=body.scrollHeight;
+    }
+    function go(key){var n=TREE[key];if(!n)return;setTimeout(function(){bot(n.m);opts(n.o);},150);}
+    var started=false;
+    function open(){panel.classList.add('open');fab.style.display='none';if(!started){started=true;go('root');}}
+    function close(){panel.classList.remove('open');fab.style.display='flex';}
+    // Свободный вопрос → поиск по базе FAQ (window.FAQ)
+    function searchFaq(q){
+      var t=q.toLowerCase().replace(/ё/g,'е');
+      var words=t.split(/[^а-яa-z0-9]+/).filter(function(w){return w.length>3;});
+      var best=null, score=0;
+      (window.FAQ||[]).forEach(function(item){
+        var hay=(item.q+' '+item.a).toLowerCase().replace(/ё/g,'е');
+        var s=0; words.forEach(function(w){ if(hay.indexOf(w)!==-1) s++; });
+        if(item.q.toLowerCase().replace(/ё/g,'е').indexOf(t)!==-1) s+=4;
+        if(s>score){score=s;best=item;}
+      });
+      return score>0?best:null;
+    }
+    var input=$('#hlp-input',panel);
+    function ask(q){
+      user(q);
+      var f=searchFaq(q);
+      setTimeout(function(){
+        if(f){ bot(esc(f.q)+'<br><br>'+esc(f.a)+'<br><br><a href="'+U+'faq.html">Все вопросы →</a> · <a href="'+U+'zayavka.html">Оставить заявку</a>'); }
+        else { bot('Не нашёл точного ответа. Загляните в <a href="'+U+'faq.html">частые вопросы</a> или оставьте заявку — эксперт ответит. Тел. 8 (800) 200-80-35.'); }
+      },200);
+    }
+    fab.addEventListener('click',open);
+    $('.hlp-close',panel).addEventListener('click',close);
+    $('#hlp-back',panel).addEventListener('click',function(){body.innerHTML='';started=true;go('root');});
+    $('#hlp-send',panel).addEventListener('click',function(){var v=input.value.trim();if(!v)return;input.value='';ask(v);});
+    input.addEventListener('keydown',function(e){if(e.key==='Enter'){var v=input.value.trim();if(!v)return;input.value='';ask(v);}});
+  }
+  buildHelper();
 })();
