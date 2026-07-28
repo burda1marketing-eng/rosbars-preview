@@ -379,20 +379,15 @@
     }catch(e){}
   })();
 
-  /* ---- Глобальный слой bento-полировки: hover, красные акценты, каскад ---- */
+  /* ---- Слой полировки: hover / красные акценты / шапка.
+     Курсор-спот — ТОЛЬКО Дизайн 2 (monday). Дизайны 1 и 3 — консервативно: рамка+тень из темы. ---- */
   (function(){
     if(document.getElementById('bento-style')) return;
     var st=document.createElement('style'); st.id='bento-style';
-    var EASE='cubic-bezier(.16,1,.3,1)'; // expo-out — «дорогая» плавность 2026, без пружин/подскоков
-    st.textContent=
-      // курсор-спот: мягкое световое пятно следует за мышью по карточке (актуальный микро-интерактив 2026)
-      '.dir,.card,.sit,.media-card{position:relative;overflow:hidden;transition:transform .4s '+EASE+',box-shadow .4s '+EASE+',border-color .3s ease}'
-      +'.dir>*,.card>*,.sit>*,.media-card>*{position:relative;z-index:1}'
-      +'.dir::before,.card::before,.sit::before,.media-card::before{content:"";position:absolute;inset:0;z-index:0;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .4s ease;background:radial-gradient(240px circle at var(--mx,50%) var(--my,50%),color-mix(in srgb,var(--seal-blue) 16%,transparent),transparent 60%)}'
-      +'.dir:hover::before,.card:hover::before,.sit:hover::before,.media-card:hover::before{opacity:1}'
-      // деликатный подъём (без scale, без вращений иконок)
-      +'.dir:hover,.card:hover,.media-card:hover{transform:translateY(-4px)}'
-      // тактильный отклик кнопок
+    var EASE='cubic-bezier(.16,1,.3,1)';
+    var isV2 = /(^|\/)v2\//.test(location.pathname);
+    var css=
+      '.dir,.card,.sit,.media-card{transition:transform .35s '+EASE+',box-shadow .35s '+EASE+',border-color .3s ease}'
       +'.btn{transition:transform .12s ease,background .16s ease,color .16s ease,border-color .16s ease,box-shadow .16s ease}'
       +'.btn:active{transform:scale(.975)}'
       +'.sit:hover .sit__ar,.card:hover .card__meta .a,.arrow:hover .a{color:#E5484D}'
@@ -401,14 +396,25 @@
       +'.sec--dark .eyebrow::before{background:#FF6B6B}'
       // шапка: верхняя плашка сворачивается плавно (без прыжка лейаута → без дёрганья)
       +'.hdr-util{overflow:hidden;max-height:64px;transition:max-height .4s '+EASE+',opacity .3s ease}'
-      +'.hdr.shrink .hdr-util{display:block;max-height:0;opacity:0;pointer-events:none}'
-      +'@media (prefers-reduced-motion:reduce){.dir,.card,.sit,.media-card{transition:none}.dir::before,.card::before,.sit::before,.media-card::before{display:none}}';
+      +'.hdr.shrink .hdr-util{display:block;max-height:0;opacity:0;pointer-events:none}';
+    if(isV2){
+      // Дизайн 2: курсор-спот (световое пятно за мышью) + чуть заметнее подъём
+      css+='.dir,.card,.sit,.media-card{position:relative;overflow:hidden}'
+        +'.dir>*,.card>*,.sit>*,.media-card>*{position:relative;z-index:1}'
+        +'.dir::before,.card::before,.sit::before,.media-card::before{content:"";position:absolute;inset:0;z-index:0;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .4s ease;background:radial-gradient(240px circle at var(--mx,50%) var(--my,50%),color-mix(in srgb,var(--seal-blue) 16%,transparent),transparent 60%)}'
+        +'.dir:hover::before,.card:hover::before,.sit:hover::before,.media-card:hover::before{opacity:1}'
+        +'.dir:hover,.card:hover,.media-card:hover{transform:translateY(-4px)}';
+    } else {
+      // Дизайн 1 и 3: консервативно — только подсветка рамки + мягкая тень, без подъёма и без пятна
+      css+='.dir:hover,.card:hover,.sit:hover,.media-card:hover{transform:none}';
+    }
+    css+='@media (prefers-reduced-motion:reduce){.dir,.card,.sit,.media-card{transition:none}}';
+    st.textContent=css;
     document.head.appendChild(st);
   })();
 
-  /* ---- Актуальный микро-интерактив 2026: курсор-спот на карточках ----
-     Никаких «выездов по скроллу» и счётчиков — контент статичен и «оживает» под курсором. */
-  if (matchMedia('(pointer:fine)').matches) {
+  /* ---- Курсор-спот — только Дизайн 2 (monday); в Дизайнах 1 и 3 наведение консервативное ---- */
+  if (/(^|\/)v2\//.test(location.pathname) && matchMedia('(pointer:fine)').matches) {
     $$('.dir, .card, .sit, .media-card').forEach(function (c) {
       c.addEventListener('pointermove', function (e) {
         var r = c.getBoundingClientRect();
