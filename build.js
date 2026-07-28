@@ -87,12 +87,22 @@ function crumbs(trail) {
   }).join('')}</ol></nav></div>`;
 }
 function ctaBand() {
-  return `<section class="sec sec--dark"><div class="wrap" style="display:flex;justify-content:space-between;align-items:center;gap:32px;flex-wrap:wrap">
-    <div><h2>Нужна экспертиза или консультация?</h2><p style="margin-top:8px">Опишите задачу — эксперт перезвонит, уточнит вопросы и оценит стоимость и срок.</p></div>
-    <div style="display:flex;flex-direction:column;gap:10px"><a class="btn btn--ondark btn--lg" href="zayavka.html">Оставить заявку</a><span style="color:#c9cede" class="js-city-phone">${SITE.phone}</span></div>
-  </div></section>`;
+  return `<section class="sec"><div class="wrap"><div style="background:var(--white);border:1px solid var(--shellstone);border-radius:8px;padding:40px 48px;display:flex;justify-content:space-between;align-items:center;gap:32px;flex-wrap:wrap">
+    <div><h2>Нужна экспертиза или консультация?</h2><p class="muted" style="margin-top:8px">Опишите задачу — эксперт перезвонит, уточнит вопросы и оценит стоимость и срок.</p></div>
+    <div style="display:flex;flex-direction:column;gap:10px"><a class="btn btn--primary btn--lg" href="zayavka.html">Оставить заявку</a><span class="muted js-city-phone">${SITE.phone}</span></div>
+  </div></div></section>`;
 }
 function priceStar() { return `<p class="price-star">* ${PRICE_STAR}</p>`; }
+function priceBlock(from, term, vid) {
+  var href = 'zayavka.html?scenario=sud' + (vid ? ('&vid=' + encodeURIComponent(vid)) : '');
+  return `<section class="sec" id="price"><div class="wrap"><div class="price-block">
+    <div><span class="eyebrow">Стоимость и сроки</span><div class="plate__price" style="margin-top:8px">от ${money(from)}</div><div class="plate__meta">${term} · заключение эксперта, 2 экз.</div>${priceStar()}</div>
+    <div style="display:flex;flex-direction:column;gap:10px"><a class="btn btn--primary btn--lg" href="${href}">Оставить заявку</a><a class="btn btn--secondary" href="stoimost.html">Все цены и сроки</a></div>
+  </div></div></section>`;
+}
+function modalHTML() {
+  return `<div id="req-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Оставить заявку"><div class="modal__box"><button class="modal__close" aria-label="Закрыть">×</button><h3>Оставить заявку</h3><p class="sub">Эксперт перезвонит, уточнит вопросы, оценит стоимость и срок. Демонстрационный прототип — данные не отправляются.</p>${formHTML('vnesud')}</div></div>`;
+}
 
 function shell(o) {
   return `<!doctype html><html lang="ru"><head>
@@ -105,12 +115,12 @@ function shell(o) {
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/styles.css">
 </head><body>
-<div class="proto">${PROTO}</div>
 ${header(o.active || '')}
 ${mmenu()}
 ${o.trail ? crumbs(o.trail) : ''}
 <main id="main">${o.main}</main>
 ${footer()}
+${modalHTML()}
 <a class="skip" href="#main">К содержанию</a>
 <script src="assets/faq-data.js"></script>
 <script src="assets/app.js"></script>
@@ -130,7 +140,7 @@ function homePage() {
   const cases = [['Арбитражный суд г. Москвы', 'А40-1234/2025', 'Март 2025', 'Спор о качестве фасадных работ на 1 240 м². Обмеры и поверочные расчёты выявили завышение объёмов.', 'Строительная'], ['Никулинский районный суд', '2-567/2025', 'Февраль 2025', 'Оспаривание подписи в договоре займа на 4,5 млн ₽ по почерковедческому исследованию.', 'Криминалистическая'], ['Краснодарский краевой суд', 'А32-890/2025', 'Январь 2025', 'Реконструкция обстоятельств ДТП по следам и повреждениям при противоречивых показаниях.', 'Транспорт']];
   const main = `
 <section class="hero"><div class="wrap"><div class="hero__in">
-  <span class="eyebrow" style="color:var(--quicksand)">АНО · Член ТПП г. Москвы · с 2014 года</span>
+  <span class="eyebrow" style="color:var(--periwinkle)">АНО · Член ТПП г. Москвы · с 2014 года</span>
   <h1 class="display" style="margin-top:14px">Независимая экспертиза для суда и досудебного урегулирования</h1>
   <p class="hero__sub">Судебные и досудебные экспертизы по 60+ направлениям. Готовим заключения, которые выдерживают проверку в суде. Москва и Краснодар, работаем по всей России.</p>
   <div class="hero__scenarios">
@@ -139,8 +149,7 @@ function homePage() {
     <a class="btn btn--ondark btn--lg" href="zayavka.html?scenario=recenz">Рецензия на чужое заключение</a>
   </div>
 </div></div></section>
-${wave()}
-<section class="sec--tight" style="padding-top:40px"><div class="wrap"><div class="stats">
+<section class="sec--tight" style="padding-top:56px"><div class="wrap"><div class="stats">
   <div><div class="stat__n tnum">2014</div><div class="stat__l">год основания</div></div>
   <div><div class="stat__n tnum">12 386</div><div class="stat__l">выполненных экспертиз</div></div>
   <div><div class="stat__n tnum">85</div><div class="stat__l">регионов России</div></div>
@@ -515,11 +524,29 @@ function faqPage() {
 }
 function politikaPage() {
   const trail = [{ t: 'Главная', href: 'index.html' }, { t: 'Политика конфиденциальности' }];
-  const main = `<section class="sec"><div class="wrap"><div class="prose"><h1>Политика конфиденциальности</h1>
-  <p class="mt-4">Демонстрационный прототип. Персональные данные не собираются и не передаются. На боевом сайте обработка ведётся оператором ${SITE.legal} в соответствии с 152-ФЗ «О персональных данных».</p>
-  <h2>Какие данные обрабатываются</h2><ul>${li(['Имя и контакты из формы заявки','Описание задачи','Технические данные посещения'])}</ul>
-  <h2>Цели</h2><ul>${li(['Ответ на обращение и консультация','Заключение и исполнение договора','Информирование о статусе'])}</ul>
-  <p>Пользователь вправе отозвать согласие, направив обращение на ${SITE.email}.</p></div></div></section>`;
+  const main = `<section class="sec"><div class="wrap"><div class="prose">
+    <h1>Политика конфиденциальности</h1>
+    <p class="muted mt-4">Демонстрационный прототип — формы на сайте не отправляют данные. Ниже приведена политика, которая будет действовать на боевом сайте rosbars.ru.</p>
+    <h2>1. Общие положения</h2>
+    <p>Настоящая Политика разработана в соответствии с Федеральным законом от 27.07.2006 № 152-ФЗ «О персональных данных» и определяет порядок обработки и защиты персональных данных пользователей сайта rosbars.ru. Оператором персональных данных является ${SITE.legal} (далее — Оператор).</p>
+    <h2>2. Какие данные обрабатываются</h2>
+    <ul>${li(['Данные, которые вы указываете в форме заявки: имя, номер телефона, адрес электронной почты, описание ситуации.','Технические данные, фиксируемые автоматически: IP-адрес, тип браузера, посещённые страницы, источник перехода, дата и время визита.'])}</ul>
+    <p>Технические данные используются для статистики и корректной работы сайта и сами по себе не позволяют идентифицировать конкретное лицо.</p>
+    <h2>3. Цели обработки</h2>
+    <ul>${li(['Обработка обращения и консультация по услугам центра.','Заключение и исполнение договора на проведение экспертизы.','Информирование о статусе обращения и результатах.'])}</ul>
+    <h2>4. Правовые основания</h2>
+    <p>Обработка ведётся на основании согласия субъекта персональных данных, выражаемого при отправке формы, а также в целях исполнения договора, стороной которого является субъект персональных данных.</p>
+    <h2>5. Cookies и аналитика</h2>
+    <p>Сайт использует технические cookies для корректной работы. Для сбора обезличенной статистики может применяться Яндекс Метрика, в том числе Вебвизор с маскированием содержимого полей форм. Отключить сбор можно в настройках браузера.</p>
+    <h2>6. Хранение и передача</h2>
+    <p>Персональные данные хранятся не дольше, чем этого требуют цели обработки, и не передаются третьим лицам без законных оснований. Обработка данных ведётся на территории Российской Федерации.</p>
+    <h2>7. Ваши права</h2>
+    <p>Вы вправе запросить сведения об обработке ваших персональных данных, потребовать их уточнения, блокирования или удаления, а также отозвать согласие, направив обращение на ${SITE.email}. Срок ответа на обращение — 10 рабочих дней.</p>
+    <h2>8. Изменения политики</h2>
+    <p>Оператор вправе вносить изменения в настоящую Политику. Актуальная редакция всегда размещена на этой странице.</p>
+    <h2>9. Реквизиты оператора</h2>
+    <p>${SITE.legal}<br>ИНН ${SITE.inn} · КПП ${SITE.kpp} · ОГРН ${SITE.ogrn}<br>Юридический адрес: 123060, Москва, ул. Маршала Бирюзова, д. 32, к. 1<br>E-mail: ${SITE.email} · Телефон: ${SITE.phone}<br>Генеральный директор: ${SITE.director}</p>
+  </div></div></section>`;
   return shell({ file: 'politika.html', title: `Политика конфиденциальности | ${SITE.name}`, desc: 'Политика обработки персональных данных.', active: '', trail, main });
 }
 function kartaSaytaPage() {

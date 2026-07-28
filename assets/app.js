@@ -12,10 +12,14 @@
   /* ---- Мегаменю «Экспертизы» ---- */
   var megaBtn = $('#mega-btn'), mega = $('#mega');
   if (megaBtn && mega) {
-    var wrap = megaBtn.closest('li');
+    var wrap = megaBtn.closest('li'), megaTimer;
     function openMega(o){ mega.classList.toggle('open', o); megaBtn.setAttribute('aria-expanded', o?'true':'false'); }
-    wrap.addEventListener('mouseenter', function(){ openMega(true); });
-    wrap.addEventListener('mouseleave', function(){ openMega(false); });
+    function schedClose(){ clearTimeout(megaTimer); megaTimer=setTimeout(function(){openMega(false);},200); }
+    function cancelClose(){ clearTimeout(megaTimer); }
+    [wrap, mega].forEach(function(el){
+      el.addEventListener('mouseenter', function(){ cancelClose(); openMega(true); });
+      el.addEventListener('mouseleave', schedClose);
+    });
     megaBtn.addEventListener('click', function(e){ e.preventDefault(); openMega(!mega.classList.contains('open')); });
     $$('.mega__groups button', mega).forEach(function (b) {
       b.addEventListener('mouseenter', function () { switchGroup(b.getAttribute('data-g')); });
@@ -145,6 +149,31 @@
     });
   });
 
+  /* ---- Модальная форма заявки ---- */
+  (function(){
+    var m=$('#req-modal'); if(!m) return;
+    function open(scenario,vid){
+      m.hidden=false; document.body.style.overflow='hidden';
+      var f=m.querySelector('form');
+      if(f&&scenario){ var tb=f.querySelector('.form-tab[data-scenario="'+scenario+'"]'); if(tb) tb.click(); }
+      if(f&&vid){ var sel=f.querySelector('.js-vid'); if(sel){ for(var i=0;i<sel.options.length;i++){ if((sel.options[i].text||'').indexOf(vid)!==-1){ sel.selectedIndex=i; break; } } } }
+      var inp=f?f.querySelector('input'):null; if(inp) inp.focus();
+    }
+    function close(){ m.hidden=true; document.body.style.overflow=''; }
+    m.addEventListener('click',function(e){ if(e.target===m) close(); });
+    var cb=m.querySelector('.modal__close'); if(cb) cb.addEventListener('click',close);
+    document.addEventListener('keydown',function(e){ if(e.key==='Escape'&&!m.hidden) close(); });
+    document.addEventListener('click',function(e){
+      var a=e.target.closest?e.target.closest('a[href*="zayavka.html"]'):null;
+      if(!a) return;
+      e.preventDefault();
+      var qs=(a.getAttribute('href').split('?')[1]||'');
+      var p=new URLSearchParams(qs);
+      var mm=$('#mmenu'); if(mm){ mm.classList.remove('open'); }
+      open(p.get('scenario'), p.get('vid')?decodeURIComponent(p.get('vid')):'');
+    });
+  })();
+
   /* ---- FAQ: один открыт, первый по умолчанию ---- */
   $$('.faq').forEach(function(faq){
     var items = $$('details', faq);
@@ -263,4 +292,12 @@
     input.addEventListener('keydown',function(e){if(e.key==='Enter'){var v=input.value.trim();if(!v)return;input.value='';ask(v);}});
   }
   buildHelper();
+
+  /* ---- Анимация блоков при скролле (fade-up) ---- */
+  if ('IntersectionObserver' in window && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+    }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+    $$('main > section').forEach(function (s, i) { if (i >= 1) { s.classList.add('reveal'); io.observe(s); } });
+  }
 })();
