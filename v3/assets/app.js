@@ -385,11 +385,13 @@
     var st=document.createElement('style'); st.id='bento-style';
     var EASE='cubic-bezier(.16,1,.3,1)'; // expo-out — «дорогая» плавность 2026, без пружин/подскоков
     st.textContent=
-      // hover: только деликатный подъём + тень/рамка (без scale, без вращений иконок)
-      '.dir,.card,.sit,.media-card,.city-block,.case{transition:transform .4s '+EASE+',box-shadow .4s '+EASE+',border-color .3s ease}'
-      +'.dir:hover,.card:hover,.media-card:hover,.city-block:hover{transform:translateY(-4px)}'
-      +'.dir__ic,.card__ic,.sit__ic{transition:transform .4s '+EASE+'}'
-      +'.dir:hover .dir__ic,.card:hover .card__ic,.sit:hover .sit__ic{transform:translateY(-2px)}'
+      // курсор-спот: мягкое световое пятно следует за мышью по карточке (актуальный микро-интерактив 2026)
+      '.dir,.card,.sit,.media-card{position:relative;overflow:hidden;transition:transform .4s '+EASE+',box-shadow .4s '+EASE+',border-color .3s ease}'
+      +'.dir>*,.card>*,.sit>*,.media-card>*{position:relative;z-index:1}'
+      +'.dir::before,.card::before,.sit::before,.media-card::before{content:"";position:absolute;inset:0;z-index:0;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .4s ease;background:radial-gradient(240px circle at var(--mx,50%) var(--my,50%),color-mix(in srgb,var(--seal-blue) 16%,transparent),transparent 60%)}'
+      +'.dir:hover::before,.card:hover::before,.sit:hover::before,.media-card:hover::before{opacity:1}'
+      // деликатный подъём (без scale, без вращений иконок)
+      +'.dir:hover,.card:hover,.media-card:hover{transform:translateY(-4px)}'
       // тактильный отклик кнопок
       +'.btn{transition:transform .12s ease,background .16s ease,color .16s ease,border-color .16s ease,box-shadow .16s ease}'
       +'.btn:active{transform:scale(.975)}'
@@ -397,44 +399,22 @@
       // красный акцент-«засечка» у надзаголовков
       +'.eyebrow::before{content:"";display:inline-block;width:20px;height:2px;background:#D64550;border-radius:2px;margin-right:8px;vertical-align:middle}'
       +'.sec--dark .eyebrow::before{background:#FF6B6B}'
-      // reveal: мягкое проявление с лёгким blur-in, короткий сдвиг — сдержанно
-      +'.reveal{opacity:0;transform:translateY(14px);filter:blur(6px);transition:opacity .7s '+EASE+',transform .7s '+EASE+',filter .7s '+EASE+'}'
-      +'.reveal.in{opacity:1;transform:none;filter:none}'
       // шапка: верхняя плашка сворачивается плавно (без прыжка лейаута → без дёрганья)
       +'.hdr-util{overflow:hidden;max-height:64px;transition:max-height .4s '+EASE+',opacity .3s ease}'
       +'.hdr.shrink .hdr-util{display:block;max-height:0;opacity:0;pointer-events:none}'
-      +'@media (prefers-reduced-motion:reduce){.reveal,.dir,.card,.sit,.media-card,.city-block{transition:none}.reveal{opacity:1;transform:none;filter:none}}';
+      +'@media (prefers-reduced-motion:reduce){.dir,.card,.sit,.media-card{transition:none}.dir::before,.card::before,.sit::before,.media-card::before{display:none}}';
     document.head.appendChild(st);
   })();
 
-  /* ---- Анимация блоков при скролле: каскад карточек + счётчики (bento) ---- */
-  if ('IntersectionObserver' in window && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    var io = new IntersectionObserver(function (entries) {
-      entries.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
-    }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
-    // проявляем только то, что НИЖЕ сгиба (без вспышки контента над сгибом)
-    var vh = window.innerHeight || 800;
-    function reveal(el, delay){ if(!el || el.getBoundingClientRect().top < vh - 60) return; el.classList.add('reveal'); if(delay) el.style.transitionDelay = delay + 'ms'; io.observe(el); }
-    $$('.sec-head, .answer, .price-block, .cta, .tbl-wrap, .media-card, .case, .contact-grid > *').forEach(function (el) { reveal(el, 0); });
-    // деликатный каскад внутри сеток (задержка сбрасывается на каждой сетке, максимум 200 мс)
-    $$('.dirs, .cards, .sits, .grid-2, .grid-3, .experts, .steps').forEach(function (grid) {
-      Array.prototype.forEach.call(grid.children, function (ch, i) { reveal(ch, Math.min(i * 50, 200)); });
+  /* ---- Актуальный микро-интерактив 2026: курсор-спот на карточках ----
+     Никаких «выездов по скроллу» и счётчиков — контент статичен и «оживает» под курсором. */
+  if (matchMedia('(pointer:fine)').matches) {
+    $$('.dir, .card, .sit, .media-card').forEach(function (c) {
+      c.addEventListener('pointermove', function (e) {
+        var r = c.getBoundingClientRect();
+        c.style.setProperty('--mx', ((e.clientX - r.left) / r.width * 100).toFixed(1) + '%');
+        c.style.setProperty('--my', ((e.clientY - r.top) / r.height * 100).toFixed(1) + '%');
+      }, { passive: true });
     });
-    // счётчики статистики (count-up)
-    var countUp = function (el) {
-      var raw = el.textContent.trim(), m = raw.match(/^([\d\s ]+)(.*)$/); if (!m) return;
-      var target = parseInt(m[1].replace(/\D/g, ''), 10), suf = m[2] || ''; if (!target) return;
-      var grouped = /\d[\s ]\d/.test(raw); // год «2014» — без разделителя; «12 386» — с разделителем
-      var fmt = function(n){ return grouped ? n.toLocaleString('ru-RU') : String(n); };
-      var dur = 1100, start = null;
-      function tick(ts){ if(start===null)start=ts; var pr=Math.min(1,(ts-start)/dur), eased=1-Math.pow(1-pr,3);
-        el.textContent=fmt(Math.floor(eased*target))+suf;
-        if(pr<1) requestAnimationFrame(tick); else el.textContent=fmt(target)+suf; }
-      requestAnimationFrame(tick);
-    };
-    var cio = new IntersectionObserver(function (entries) {
-      entries.forEach(function (e) { if (e.isIntersecting) { countUp(e.target); cio.unobserve(e.target); } });
-    }, { threshold: 0.6 });
-    $$('.stat__n').forEach(function (n) { cio.observe(n); });
   }
 })();
