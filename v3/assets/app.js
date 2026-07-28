@@ -394,9 +394,10 @@
       // красный акцент-«засечка» у надзаголовков
       +'.eyebrow::before{content:"";display:inline-block;width:20px;height:2px;background:#D64550;border-radius:2px;margin-right:8px;vertical-align:middle}'
       +'.sec--dark .eyebrow::before{background:#FF6B6B}'
-      // шапка: верхняя плашка сворачивается плавно (без прыжка лейаута → без дёрганья)
-      +'.hdr-util{overflow:hidden;max-height:64px;transition:max-height .4s '+EASE+',opacity .3s ease}'
-      +'.hdr.shrink .hdr-util{display:block;max-height:0;opacity:0;pointer-events:none}';
+      // шапка: верхняя плашка сворачивается плавно. overflow:hidden ТОЛЬКО при сжатии,
+      // иначе он обрезает выпадашку выбора города (Москва/Краснодар).
+      +'.hdr-util{max-height:64px;transition:max-height .4s '+EASE+',opacity .3s ease}'
+      +'.hdr.shrink .hdr-util{display:block;overflow:hidden;max-height:0;opacity:0;pointer-events:none}';
     if(isV2){
       // Дизайн 2: курсор-спот (световое пятно за мышью) + чуть заметнее подъём
       css+='.dir,.card,.sit,.media-card{position:relative;overflow:hidden}'
