@@ -70,7 +70,7 @@ function svcHref(name, groupSlug){ return STANDALONE[name] || (groupSlug + '.htm
 const MENU = [
   { t:'Организация', href:'organizaciya.html', sub:[
     ['Об организации','organizaciya.html'],['Эксперты','organizaciya.html#eksperty'],['Отзывы и рекомендации','organizaciya.html#otzyvy'],
-    ['Лицензии и аккредитация','organizaciya.html#docs'],['Обучение','organizaciya.html#obuchenie'],['Кейсы','keysy.html'],
+    ['Лицензии и аккредитация','organizaciya.html#docs'],['Стоимость и сроки','stoimost.html'],['Обучение','organizaciya.html#obuchenie'],['Кейсы','keysy.html'],
     ['Мы в СМИ','organizaciya.html#smi'],['Реквизиты','kontakty.html#rekvizity'],['Вакансии','organizaciya.html#vakansii'] ] },
   { t:'Экспертизы', href:'ekspertizy.html', mega:true },
   { t:'Госзакупки', href:'goszakupki.html', sub:[

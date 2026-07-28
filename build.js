@@ -188,13 +188,6 @@ function homePage() {
   <p class="mt-6"><a class="arrow" href="keysy.html">Все кейсы <span class="a">→</span></a></p>
 </div></section>
 
-<section class="sec sec--tight" style="background:var(--white)"><div class="wrap">
-  <div class="sec-head"><span class="eyebrow">Стоимость</span><h2>Цены на популярные виды</h2></div>
-  <div class="tbl-wrap"><table class="price" id="price-table-home"><thead><tr><th>Вид экспертизы</th><th>Стоимость</th><th>Срок</th></tr></thead><tbody>${priceRows}</tbody></table></div>
-  ${priceStar()}
-  <p class="mt-4"><a class="btn btn--secondary" href="stoimost.html">Все цены и сроки</a></p>
-</div></section>
-
 <section class="sec"><div class="wrap"><div class="sec-head"><span class="eyebrow">Документы</span><h2>Лицензии и свидетельства</h2></div>
   <div class="docs">${Array.from({length:12},(_,i)=>`<div class="doc"><img src="assets/certificates/doki_${i+1}.jpg" alt="Документ ${i+1}" loading="lazy"></div>`).join('')}</div>
   <p class="mt-4"><a class="arrow" href="organizaciya.html#docs">Все документы центра <span class="a">→</span></a></p>

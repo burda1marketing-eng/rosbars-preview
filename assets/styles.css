@@ -21,7 +21,7 @@
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--swan-wing);color:var(--ink);font-family:var(--sans);
-  font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+  font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:clip}
 h1,h2,h3,h4,h5{margin:0;line-height:1.2;color:var(--royal-blue)}
 h1,h2{font-family:var(--display);font-weight:600}
 h3,h4,h5{font-family:var(--sans);font-weight:600}
@@ -332,15 +332,15 @@ table.price .num{text-align:right;font-variant-numeric:tabular-nums;font-weight:
 .lb-close{top:20px;right:24px}.lb-prev{left:20px;top:50%;transform:translateY(-50%)}.lb-next{right:20px;top:50%;transform:translateY(-50%)}
 
 /* Forms */
-.form{display:grid;gap:16px;max-width:560px}
+.form{display:grid;gap:16px;max-width:560px;width:100%}
 .form-tabs{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}
 .form-tab{height:44px;padding:0 18px;border:1px solid var(--shellstone);background:var(--white);border-radius:var(--r-sm);
   cursor:pointer;font-family:var(--sans);font-size:14px;font-weight:500;color:var(--ink)}
 .form-tab.on{background:var(--seal-blue);border-color:var(--seal-blue);color:#fff}
-.field{display:flex;flex-direction:column;gap:6px}
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
 .field label{font-weight:500;font-size:14px}
 .field input,.field textarea,.field select{height:48px;border:1px solid var(--shellstone);border-radius:var(--r-sm);
-  padding:0 14px;font-family:var(--sans);font-size:15px;background:var(--white);color:var(--ink)}
+  padding:0 14px;font-family:var(--sans);font-size:15px;background:var(--white);color:var(--ink);width:100%;min-width:0;max-width:100%}
 .field textarea{height:auto;min-height:110px;padding:12px 14px;resize:vertical}
 .field input:focus,.field textarea:focus,.field select:focus{outline:none;border-color:var(--seal-blue);border-width:2px}
 .field.err input,.field.err textarea{border-color:var(--danger)}
@@ -463,6 +463,13 @@ table.price .num{text-align:right;font-variant-numeric:tabular-nums;font-weight:
   table.price .num{text-align:right}
   .price-group-row{display:none!important}
 }
+@media (max-width:560px){
+  .hdr__right .btn--ondark{display:none}
+  .brand img{width:52px;height:52px}
+  .brand__name{font-size:15px}
+  .sec-head h2,.prose h2{overflow-wrap:break-word}
+}
+@media (max-width:400px){ .brand__sub{display:none} }
 @media (max-width:480px){
   :root{--pad:16px}
   .sits,.docs{grid-template-columns:1fr 1fr}
