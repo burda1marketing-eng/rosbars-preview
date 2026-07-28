@@ -317,6 +317,18 @@ table.price .num{text-align:right;font-variant-numeric:tabular-nums;font-weight:
 .consent input{width:18px;height:18px;margin-top:2px;accent-color:var(--seal-blue)}
 .form-ok{display:none;background:#e6f3ee;border:1px solid var(--success);color:#155e45;padding:16px 18px;border-radius:var(--r)}
 .form-ok.show{display:block}
+.req{color:var(--danger)}
+.opt{color:var(--ink-muted);font-weight:400;font-size:13px}
+.consent-note{font-size:13px;color:var(--ink-muted);line-height:1.45}
+.consent-note a{color:var(--seal-blue);text-decoration:underline}
+.or-div{display:flex;align-items:center;gap:14px;color:var(--ink-muted);font-size:14px;margin:2px 0}
+.or-div::before,.or-div::after{content:"";flex:1;height:1px;background:var(--shellstone)}
+/* Модалка — тёплый фон как у референса, поля белые скруглённые */
+.modal__box{background:var(--swan-wing)}
+.modal__box .eyebrow{letter-spacing:.1em;font-size:12px}
+.modal__box h2{font-size:28px}
+.modal__box .field input,.modal__box .field select,.modal__box .field textarea{background:#fff;border-radius:9px;border-color:var(--shellstone)}
+.modal__box .field input:focus,.modal__box .field select:focus,.modal__box .field textarea:focus{border-color:var(--seal-blue)}
 
 /* City blocks */
 .city-block{background:var(--white);border:1px solid var(--shellstone);border-radius:var(--r);padding:26px;transition:border-color .15s}

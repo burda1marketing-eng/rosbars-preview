@@ -7,7 +7,7 @@ const SITE = {
   short: 'Независимая экспертиза',
   domain: 'rosbars.ru',
   phone: '8 (800) 200-80-35', phoneRaw: '88002008035',
-  email: 'info@rosbars.ru',
+  email: 'info@rosbars.ru', telegram: 'mariyponomar',
   inn: '7714403135', kpp: '773401001', ogrn: '1147799015000',
   director: 'Пономаренко Мария Александровна',
   year: 2014,
