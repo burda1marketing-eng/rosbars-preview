@@ -251,22 +251,67 @@
     panel.innerHTML='<div class="hlp-head"><span class="av"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M21 11.5a8.5 8.5 0 01-12.3 7.6L3 21l1.9-5.7A8.5 8.5 0 1121 11.5z"/></svg></span><span><b>AI-консультант</b><span>Помощник центра · на связи</span></span><button class="hlp-close" aria-label="Закрыть">×</button></div><div class="hlp-body" id="hlp-body"></div><div class="hlp-foot"><button class="hlp-back" id="hlp-back" title="В начало" style="flex-shrink:0">↺</button><input id="hlp-input" type="text" placeholder="Задайте вопрос…" autocomplete="off" style="flex:1;height:40px;border:1px solid var(--shellstone);border-radius:20px;padding:0 14px;font-family:var(--sans);font-size:14px"><button id="hlp-send" aria-label="Отправить" style="flex-shrink:0;width:40px;height:40px;border-radius:50%;background:var(--seal-blue);color:#fff;border:none;cursor:pointer">→</button></div>';
     document.body.appendChild(fab); document.body.appendChild(panel);
     var body=$('#hlp-body',panel);
-    function bot(t){var m=document.createElement('div');m.className='hlp-msg bot';m.innerHTML=t;body.appendChild(m);body.scrollTop=body.scrollHeight;}
-    function user(t){var m=document.createElement('div');m.className='hlp-msg user';m.textContent=t;body.appendChild(m);body.scrollTop=body.scrollHeight;}
+    function scrollB(){ body.scrollTop=body.scrollHeight; }
+    if(!document.getElementById('hlp-anim-style')){
+      var st=document.createElement('style'); st.id='hlp-anim-style';
+      st.textContent='.hlp-typing{align-self:flex-start;background:#fff;border:1px solid rgba(20,40,80,.1);border-radius:14px;border-bottom-left-radius:4px;padding:13px 15px;display:flex;gap:5px;animation:hlpin .25s ease}'
+        +'.hlp-typing span{width:7px;height:7px;border-radius:50%;background:#9aa4b2;animation:hlpblink 1.1s infinite}'
+        +'.hlp-typing span:nth-child(2){animation-delay:.18s}.hlp-typing span:nth-child(3){animation-delay:.36s}'
+        +'@keyframes hlpblink{0%,70%,100%{opacity:.3;transform:translateY(0)}35%{opacity:.95;transform:translateY(-4px)}}'
+        +'.hlp-msg{animation:hlpin .28s ease}@keyframes hlpin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}'
+        +'.hlp-opt{opacity:0;animation:hlpin .3s ease forwards}'
+        +'.hlp-fab{position:fixed}.hlp-fab::after{content:"";position:absolute;top:-2px;right:-2px;width:12px;height:12px;border-radius:50%;background:#E5484D;border:2px solid #fff;animation:hlppulse 2.2s infinite}'
+        +'@keyframes hlppulse{0%{box-shadow:0 0 0 0 rgba(229,72,77,.5)}70%{box-shadow:0 0 0 9px rgba(229,72,77,0)}100%{box-shadow:0 0 0 0 rgba(229,72,77,0)}}';
+      document.head.appendChild(st);
+    }
+    function user(t){var m=document.createElement('div');m.className='hlp-msg user';m.textContent=t;body.appendChild(m);scrollB();}
+    function typing(){var d=document.createElement('div');d.className='hlp-typing';d.innerHTML='<span></span><span></span><span></span>';body.appendChild(d);scrollB();return d;}
+    // потоковый вывод: слова проявляются по очереди (как в реальном AI-чате), ссылки/HTML сохраняются
+    function streamWords(el, done){
+      var walker=document.createTreeWalker(el,NodeFilter.SHOW_TEXT),nodes=[];
+      while(walker.nextNode()) nodes.push(walker.currentNode);
+      var spans=[];
+      nodes.forEach(function(node){
+        if(!node.nodeValue) return;
+        var frag=document.createDocumentFragment();
+        node.nodeValue.split(/(\s+)/).forEach(function(tok){
+          if(tok==='') return;
+          if(/^\s+$/.test(tok)){ frag.appendChild(document.createTextNode(tok)); }
+          else { var sp=document.createElement('span'); sp.textContent=tok; sp.style.opacity='0'; sp.style.transition='opacity .12s ease'; frag.appendChild(sp); spans.push(sp); }
+        });
+        if(node.parentNode) node.parentNode.replaceChild(frag,node);
+      });
+      var i=0;
+      (function step(){
+        if(i>=spans.length){ if(done) done(); return; }
+        spans[i].style.opacity='1'; i++;
+        if(i%2===0) scrollB();
+        setTimeout(step, 22);
+      })();
+    }
+    function bot(t, cb){
+      var ind=typing();
+      var plain=String(t).replace(/<[^>]+>/g,'');
+      setTimeout(function(){
+        ind.remove();
+        var m=document.createElement('div');m.className='hlp-msg bot';m.innerHTML=t;body.appendChild(m);scrollB();
+        streamWords(m, cb);
+      }, Math.min(1200, 420 + plain.length*6));
+    }
     function opts(list){
       var w=document.createElement('div');w.className='hlp-opts';
-      list.forEach(function(o){
-        var b=document.createElement('button');b.className='hlp-opt';b.textContent=o.t;
+      list.forEach(function(o,idx){
+        var b=document.createElement('button');b.className='hlp-opt';b.textContent=o.t;b.style.animationDelay=(idx*60)+'ms';
         b.addEventListener('click',function(){
           user(o.t);
-          if(o.link){ bot('Открываю: <a href="'+U+o.link+'">'+esc(o.t)+'</a>'); setTimeout(function(){location.href=U+o.link;},400); }
+          if(o.link){ bot('Открываю: <a href="'+U+o.link+'">'+esc(o.t)+'</a>'); setTimeout(function(){location.href=U+o.link;},650); }
           else if(o.go){ go(o.go); }
         });
         w.appendChild(b);
       });
-      body.appendChild(w);body.scrollTop=body.scrollHeight;
+      body.appendChild(w);scrollB();
     }
-    function go(key){var n=TREE[key];if(!n)return;setTimeout(function(){bot(n.m);opts(n.o);},150);}
+    function go(key){var n=TREE[key];if(!n)return;bot(n.m, function(){ opts(n.o); });}
     var started=false;
     function open(){panel.classList.add('open');fab.style.display='none';if(!started){started=true;go('root');}}
     function close(){panel.classList.remove('open');fab.style.display='flex';}
@@ -287,10 +332,8 @@
     function ask(q){
       user(q);
       var f=searchFaq(q);
-      setTimeout(function(){
-        if(f){ bot(esc(f.q)+'<br><br>'+esc(f.a)+'<br><br><a href="'+U+'faq.html">Все вопросы →</a> · <a href="'+U+'zayavka.html">Оставить заявку</a>'); }
-        else { bot('Не нашёл точного ответа. Загляните в <a href="'+U+'faq.html">частые вопросы</a> или оставьте заявку — эксперт ответит. Тел. 8 (800) 200-80-35.'); }
-      },200);
+      if(f){ bot('<b>'+esc(f.q)+'</b><br><br>'+esc(f.a)+'<br><br><a href="'+U+'faq.html">Все вопросы →</a> · <a href="'+U+'zayavka.html">Оставить заявку</a>'); }
+      else { bot('Не нашёл точного ответа. Загляните в <a href="'+U+'faq.html">частые вопросы</a> или оставьте заявку — эксперт ответит. Тел. 8 800 200-80-35.'); }
     }
     fab.addEventListener('click',open);
     $('.hlp-close',panel).addEventListener('click',close);
@@ -329,11 +372,50 @@
     }catch(e){}
   })();
 
-  /* ---- Анимация блоков при скролле (fade-up) ---- */
+  /* ---- Глобальный слой bento-полировки: hover, красные акценты, каскад ---- */
+  (function(){
+    if(document.getElementById('bento-style')) return;
+    var st=document.createElement('style'); st.id='bento-style';
+    st.textContent=
+      '.dir,.card,.sit,.media-card,.city-block,.case,.expert{will-change:transform}'
+      +'.dir:hover,.card:hover,.media-card:hover,.city-block:hover{transform:translateY(-5px) scale(1.012)}'
+      +'.dir__ic,.card__ic,.sit__ic{transition:transform .28s cubic-bezier(.2,.8,.2,1)}'
+      +'.dir:hover .dir__ic,.card:hover .card__ic,.sit:hover .sit__ic{transform:scale(1.12) rotate(-4deg)}'
+      +'.ic{overflow:visible}'
+      +'.sit:hover .sit__ar,.card:hover .card__meta .a,.arrow:hover .a,.dir:hover .arrow .a{color:#E5484D}'
+      +'.eyebrow::before{content:"";display:inline-block;width:20px;height:2px;background:#D64550;border-radius:2px;margin-right:8px;vertical-align:middle}'
+      +'.sec--dark .eyebrow::before{background:#FF6B6B}'
+      +'.reveal{opacity:0;transform:translateY(22px);transition:opacity .6s cubic-bezier(.2,.7,.2,1),transform .6s cubic-bezier(.2,.7,.2,1)}'
+      +'.reveal.in{opacity:1;transform:none}'
+      +'@media (prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}}';
+    document.head.appendChild(st);
+  })();
+
+  /* ---- Анимация блоков при скролле: каскад карточек + счётчики (bento) ---- */
   if ('IntersectionObserver' in window && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
     var io = new IntersectionObserver(function (entries) {
       entries.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
-    }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+    }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
     $$('main > section').forEach(function (s, i) { if (i >= 1) { s.classList.add('reveal'); io.observe(s); } });
+    // каскадное появление карточек внутри сеток
+    $$('.dirs > *, .cards > *, .sits > *, .grid-3 > *, .grid-2 > *, .experts > *, .steps > *, .docs > *, .theses > *').forEach(function (el, i) {
+      el.classList.add('reveal'); el.style.transitionDelay = ((i % 6) * 55) + 'ms'; io.observe(el);
+    });
+    // счётчики статистики (count-up)
+    var countUp = function (el) {
+      var raw = el.textContent.trim(), m = raw.match(/^([\d\s ]+)(.*)$/); if (!m) return;
+      var target = parseInt(m[1].replace(/\D/g, ''), 10), suf = m[2] || ''; if (!target) return;
+      var grouped = /\d[\s ]\d/.test(raw); // год «2014» — без разделителя; «12 386» — с разделителем
+      var fmt = function(n){ return grouped ? n.toLocaleString('ru-RU') : String(n); };
+      var dur = 1100, start = null;
+      function tick(ts){ if(start===null)start=ts; var pr=Math.min(1,(ts-start)/dur), eased=1-Math.pow(1-pr,3);
+        el.textContent=fmt(Math.floor(eased*target))+suf;
+        if(pr<1) requestAnimationFrame(tick); else el.textContent=fmt(target)+suf; }
+      requestAnimationFrame(tick);
+    };
+    var cio = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) { if (e.isIntersecting) { countUp(e.target); cio.unobserve(e.target); } });
+    }, { threshold: 0.6 });
+    $$('.stat__n').forEach(function (n) { cio.observe(n); });
   }
 })();

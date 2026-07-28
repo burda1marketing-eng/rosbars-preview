@@ -358,7 +358,7 @@ table.price .num{text-align:right;font-variant-numeric:tabular-nums;font-weight:
 .ftr__bot{margin-top:48px;padding-top:20px;border-top:1px solid rgba(255,255,255,.14);color:#CBD5E1;font-size:13px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}.ftr__bot a{color:#CBD5E1}
 
 /* Помощник */
-.hlp-fab{position:fixed;right:20px;bottom:20px;z-index:110;height:54px;padding:0 22px 0 18px;border-radius:6px;background:var(--seal-blue);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;gap:9px;font-family:var(--sans);font-weight:600;font-size:15px;box-shadow:var(--shadow-2)}
+.hlp-fab{position:fixed;right:20px;bottom:20px;z-index:110;height:54px;padding:0 24px 0 20px;border-radius:999px;background:var(--seal-blue);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;gap:9px;font-family:var(--sans);font-weight:600;font-size:15px;box-shadow:var(--shadow-2)}
 .hlp-fab:hover{background:var(--seal-blue-dark)}
 .hlp-panel{position:fixed;right:20px;bottom:20px;z-index:111;width:380px;max-width:calc(100vw - 32px);height:520px;max-height:calc(100vh - 40px);background:#fff;border-radius:var(--r);box-shadow:var(--shadow-2);display:none;flex-direction:column;overflow:hidden;border:1px solid var(--shellstone)}
 .hlp-panel.open{display:flex}

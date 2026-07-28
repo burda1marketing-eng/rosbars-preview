@@ -20,12 +20,27 @@ const ICONS = {
   bolt:'M13 3L5 13h6l-1 8 8-10h-6z', gear:'M12 8a4 4 0 100 8 4 4 0 000-8M12 2v3M12 19v3M4 12H1M23 12h-3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2',
   car:'M5 16l1.5-5.5A2 2 0 018.4 9h7.2a2 2 0 011.9 1.5L19 16M3 16h18v3h-3v-3M6 19v-3', chart:'M4 20h16M6 20V11M11 20V6M16 20v-6M4 9l5-4 4 3 7-5',
   bulb:'M9 18h6M10 21h4M8 13a5 5 0 118 0c-1 1.2-1.5 2-1.5 3h-5c0-1-.5-1.8-1.5-3', chip:'M8 8h8v8H8zM4 9v6M20 9v6M9 4h6M9 20h6M4 9h1M4 15h1M19 9h1M19 15h1',
-  plus:'M12 5v14M5 12h14', pin:'M12 21s7-6.5 7-12a7 7 0 10-14 0c0 5.5 7 12 7 12zM12 9a2 2 0 100 .01',
+  plus:'M12 6v12M6 12h12', pin:'M12 21s7-6.5 7-12a7 7 0 10-14 0c0 5.5 7 12 7 12zM12 9a2 2 0 100 .01',
   phone:'M5 4h4l2 5-3 2c1 2 3 4 5 5l2-3 5 2v4a1 1 0 01-1 1C10 20 4 14 4 5a1 1 0 011-1', mail:'M3 5h18v14H3zM3 7l9 6 9-6',
   clock:'M12 3a9 9 0 100 18 9 9 0 000-18M12 7v5l3 2', shield:'M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6zM9 12l2 2 4-4',
-  doc:'M6 3h9l3 3v15H6zM14 3v4h4', search:'M11 4a7 7 0 100 14 7 7 0 000-14M20 20l-4-4'
+  doc:'M6 3h9l3 3v15H6zM14 3v4h4', search:'M11 4a7 7 0 100 14 7 7 0 000-14M20 20l-4-4',
+  drop:'M12 3c4 5 6 8 6 11a6 6 0 01-12 0c0-3 2-6 6-11z', docx:'M6 3h9l3 3v15H6zM14 3v4h4M9.5 11.5l5 5M14.5 11.5l-5 5',
+  landchart:'M3 20h18M5 20l3-9 4 4 3-7 4 12', shieldcheck:'M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6zM9 12l2 2 4-4',
+  scales:'M12 3v18M7 21h10M6 7h12M8 7l-3 6a3 3 0 006 0zM16 7l3 6a3 3 0 01-6 0z'
 };
-const ic = (k, sz) => `<svg width="${sz||24}" height="${sz||24}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="${ICONS[k]||''}"/></svg>`;
+/* duotone-подложки (мягкая заливка под контур — современный вид) */
+const ICONBG = {
+  build:'M4 21V8l8-5 8 5v13z', coins:'M12 4a8 8 0 100 16 8 8 0 000-16z', bolt:'M13 3L5 13h6l-1 8 8-10h-6z',
+  gear:'M12 5.5a6.5 6.5 0 100 13 6.5 6.5 0 000-13z', car:'M5 16l1.5-5.5A2 2 0 018.4 9h7.2a2 2 0 011.9 1.5L19 16z',
+  chart:'M5 20V11h2.5v9zM10.5 20V6H13v14zM16 20v-6h2.5v6z', bulb:'M8 13a5 5 0 118 0c-1 1.2-1.5 2-1.5 3h-5c0-1-.5-1.8-1.5-3z',
+  chip:'M8 8h8v8H8z', shield:'M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z', shieldcheck:'M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z',
+  doc:'M6 3h9l3 3v15H6z', docx:'M6 3h9l3 3v15H6z', drop:'M12 3c4 5 6 8 6 11a6 6 0 01-12 0c0-3 2-6 6-11z',
+  plus:'M9.5 5h5v4.5H19v5h-4.5V19h-5v-4.5H5v-5h4.5z', pen:'M14 6l3-3 3 3-3 3z'
+};
+const ic = (k, sz) => {
+  const s = sz || 24, d = ICONS[k] || '', f = ICONBG[k] || '';
+  return `<svg class="ic" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${f ? `<path d="${f}" fill="currentColor" stroke="none" opacity=".13"/>` : ''}<path d="${d}"/></svg>`;
+};
 
 /* ---------- Навигация ---------- */
 function megaHTML() {
@@ -56,7 +71,7 @@ function header(active) {
     </div></div>
     <div class="wrap hdr__in">
       <a class="brand" href="index.html" aria-label="${esc(SITE.name)}"><img src="assets/logo.png" width="62" height="62" alt="Печать центра"><span class="brand__txt"><span class="brand__name">Независимая экспертиза</span><span class="brand__sub">Исследовательский центр</span></span></a>
-      <nav class="menu" aria-label="Главное меню"><ul style="display:flex;gap:16px;list-style:none;margin:0;padding:0">${items}</ul></nav>
+      <nav class="menu" aria-label="Главное меню"><ul style="display:flex;align-items:center;gap:16px;list-style:none;margin:0;padding:0">${items}</ul></nav>
       <div class="hdr__right">
         <a class="btn btn--ondark" href="zayavka.html">Оставить заявку</a>
         <button class="burger" aria-label="Меню"><span></span><span></span><span></span></button>
@@ -155,12 +170,12 @@ function dirsCards() {
 }
 function homePage() {
   const sits = [
-    ['Залили квартиру','prichiny-zaliva.html','M12 3c4 5 6 8 6 11a6 6 0 01-12 0c0-3 2-6 6-11z'],
-    ['Спор с подрядчиком','stroitelnaya-ekspertiza.html','M4 21V8l8-5 8 5v13M9 21v-6h6v6M4 12h16'],
-    ['Не согласен с экспертизой','recenzii.html','M6 3h9l3 3v15H6zM14 3v4h4M9 11l6 6M15 11l-6 6'],
-    ['Оспариваю кадастровую стоимость','kadastrovaya-stoimost.html','M3 20h18M5 20l3-9 4 4 3-7 4 12'],
-    ['Приёмка по госконтракту','goszakupki.html','M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6zM9 12l2 2 4-4'],
-    ['Наследственный спор','ocenochnaya-ekspertiza.html','M12 3v18M7 21h10M6 7h12M8 7l-3 6a3 3 0 006 0zM16 7l3 6a3 3 0 01-6 0z']
+    ['Залили квартиру','prichiny-zaliva.html','drop'],
+    ['Спор с подрядчиком','stroitelnaya-ekspertiza.html','build'],
+    ['Не согласен с экспертизой','recenzii.html','docx'],
+    ['Оспариваю кадастровую стоимость','kadastrovaya-stoimost.html','landchart'],
+    ['Приёмка по госконтракту','goszakupki.html','shieldcheck'],
+    ['Наследственный спор','ocenochnaya-ekspertiza.html','scales']
   ];
   const priceRows = PRICES.slice(0, 9).map(p => `<tr data-name="${esc(p[0])}" data-group="${p[1]}"><th scope="row" data-l="Вид"><a href="${p[4]}">${p[0]}</a></th><td class="num" data-l="Стоимость">от ${money(p[2])}</td><td data-l="Срок">${p[3]} дн.</td></tr>`).join('');
   const cases = [['Арбитражный суд г. Москвы', 'А40-1234/2025', 'Март 2025', 'Спор о качестве фасадных работ на 1 240 м². Обмеры и поверочные расчёты выявили завышение объёмов.', 'Строительная'], ['Никулинский районный суд', '2-567/2025', 'Февраль 2025', 'Оспаривание подписи в договоре займа на 4,5 млн ₽ по почерковедческому исследованию.', 'Криминалистическая'], ['Краснодарский краевой суд', 'А32-890/2025', 'Январь 2025', 'Реконструкция обстоятельств ДТП по следам и повреждениям при противоречивых показаниях.', 'Транспорт']];
@@ -190,7 +205,7 @@ function homePage() {
 
 <section class="sec sec--dark"><div class="wrap">
   <div class="sec-head"><span class="eyebrow">С чего начать</span><h2>Типовые ситуации</h2></div>
-  <div class="sits">${sits.map(s => `<a class="sit" href="${s[1]}"><span class="sit__ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="${s[2]}"/></svg></span><span class="sit__t">${s[0]}</span><span class="sit__ar">→</span></a>`).join('')}</div>
+  <div class="sits">${sits.map(s => `<a class="sit" href="${s[1]}"><span class="sit__ic">${ic(s[2], 24)}</span><span class="sit__t">${s[0]}</span><span class="sit__ar">→</span></a>`).join('')}</div>
 </div></section>
 
 <section class="sec"><div class="wrap">
