@@ -2,8 +2,9 @@
 'use strict';
 const fs = require('fs');
 const OUT = __dirname;
-const { SITE, PRICE_STAR, GROUPS, MENU, PRICES, svcHref } = require('./data.js');
+const { SITE, PRICE_STAR, GROUPS, MENU, PRICES, SERVICES_ALL, svcHref } = require('./data.js');
 let FAQ = []; try { FAQ = JSON.parse(fs.readFileSync(OUT + '/faq.json', 'utf8')); } catch (e) {}
+let CONTENT = {}; try { CONTENT = JSON.parse(fs.readFileSync(OUT + '/services-content.json', 'utf8')); } catch (e) {}
 
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const money = n => n.toLocaleString('ru-RU').replace(/,/g, ' ') + ' ₽';
@@ -616,6 +617,35 @@ function kartaSaytaPage() {
   return shell({ file: 'karta-sayta.html', title: `Карта сайта | ${SITE.name}`, desc: 'Карта сайта.', active: '', trail, main });
 }
 
+/* Страница отдельной услуги (подвида) из сгенерированного контента */
+function servicePageFromContent(svc) {
+  const c = CONTENT[svc.name] || {};
+  const groupName = svc.groupName.split(' —')[0].split(' и консалтинг')[0];
+  const trail = [{ t:'Главная', href:'index.html' }, { t:'Экспертизы', href:'ekspertizy.html' }, { t:groupName, href:svc.groupSlug+'.html' }, { t:svc.name }];
+  const h1 = c.h1 || svc.name;
+  const answer = c.answer || (`${svc.groupName} — направление «${svc.name.toLowerCase()}». Проводим досудебные исследования и судебные экспертизы, готовим заключение по 73-ФЗ, пригодное для суда. Стоимость — от ${money(svc.from)}, точную цену эксперт называет после изучения материалов.`);
+  const when = (c.when && c.when.length) ? c.when : ['Досудебное обоснование претензии или иска','Назначение судом по ходатайству стороны','Спор со страховой, подрядчиком или контрагентом','Оценка ущерба и его размера'];
+  const norms = (c.norms && c.norms.length) ? c.norms : ['73-ФЗ «О государственной судебно-экспертной деятельности»','ст. 307 УК РФ (ответственность эксперта)'];
+  const faq = (c.faq && c.faq.length) ? c.faq : [];
+  const related = SERVICES_ALL.filter(x => x.groupSlug === svc.groupSlug && x.slug !== svc.slug).slice(0, 4)
+    .map(x => `<a class="card" href="${x.slug}.html"><h4>${x.name}</h4><div class="card__meta"><span class="a">Подробнее →</span></div></a>`).join('');
+  const main = `
+<section class="sec"><div class="wrap narrow">
+  <h1>${h1}</h1>
+  <div class="answer mt-4">${answer}</div>
+  <div class="prose mt-8">
+    <h2>Когда назначается</h2><ul>${li(when)}</ul>
+    ${(c.questions && c.questions.length) ? `<h2>Вопросы эксперту</h2><ul>${li(c.questions)}</ul>` : ''}
+    <h2>Нормативная база</h2><ul>${li(norms)}</ul>
+    ${c.caseText ? `<h2>Пример из практики</h2><p>${c.caseText}</p>` : ''}
+  </div>
+  ${faq.length ? `<h2 class="mt-8">Частые вопросы</h2>${faqAccordion(faq)}` : ''}
+  ${related ? `<h2 class="mt-8">Другие виды в этой группе</h2><div class="cards">${related}</div>` : ''}
+</div></section>
+${priceBlock(svc.from, 'срок от 5 рабочих дней', svc.name)}`;
+  return shell({ file: svc.slug + '.html', title: `${h1} — цена и сроки | ${SITE.name}`, desc: c.meta || `Экспертиза «${svc.name}»: досудебно и для суда, от ${money(svc.from)}. Заключение для суда, Москва и Краснодар.`, active: 'ekspertizy.html', trail, main });
+}
+
 /* ---------- Стандалон-услуги ---------- */
 const STANDALONE_SVC = [
   { file:'pocherkovedcheskaya.html', group:'Криминалистическая', groupHref:'kriminalisticheskaya-ekspertiza.html', crumb:'Почерковедческая', from:15000, term:'5–10 рабочих дней',
@@ -663,6 +693,7 @@ PAGES.push({ f: 'prichiny-zaliva.html', h: zalivPage() });
 GROUPS.forEach(g => PAGES.push({ f: g.slug + '.html', h: pillarPage(g) }));
 STANDALONE_SVC.forEach(s => PAGES.push({ f: s.file, h: servicePage(s) }));
 INDUSTRIES.forEach(ind => PAGES.push({ f: ind.slug + '.html', h: industryPage(ind) }));
+SERVICES_ALL.filter(s => !s.custom).forEach(s => PAGES.push({ f: s.slug + '.html', h: servicePageFromContent(s) }));
 
 // удалить старые страницы прошлой сборки
 ['uslugi.html','o-tsentre.html','uslugi-stroitelnaya.html','uslugi-pocherkovedcheskaya.html','uslugi-ocenochnaya.html','uslugi-avtotehnicheskaya.html','uslugi-tovarovedcheskaya.html','uslugi-ekonomicheskaya.html','uslugi-zemleustroitelnaya.html','uslugi-pozharno-tehnicheskaya.html'].forEach(f=>{try{fs.unlinkSync(OUT+'/'+f);}catch(e){}});
