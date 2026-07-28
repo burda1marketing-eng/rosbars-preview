@@ -21,12 +21,12 @@
       el.addEventListener('mouseleave', schedClose);
     });
     megaBtn.addEventListener('click', function(e){ e.preventDefault(); openMega(!mega.classList.contains('open')); });
-    $$('.mega__groups button', mega).forEach(function (b) {
+    $$('.mega__groups a', mega).forEach(function (b) {
       b.addEventListener('mouseenter', function () { switchGroup(b.getAttribute('data-g')); });
       b.addEventListener('click', function () { switchGroup(b.getAttribute('data-g')); });
     });
     function switchGroup(g){
-      $$('.mega__groups button', mega).forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-g')===g); });
+      $$('.mega__groups a', mega).forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-g')===g); });
       $$('.mega__panel', mega).forEach(function(p){ p.classList.toggle('hide', p.getAttribute('data-g')!==g); });
     }
     document.addEventListener('keydown', function(e){ if(e.key==='Escape') openMega(false); });
@@ -50,10 +50,17 @@
     var c = CITY[key]; if(!c) return;
     $$('.js-city-phone').forEach(function(e){ e.textContent=c.phone; if(e.tagName==='A') e.href='tel:'+c.phone.replace(/\D/g,''); });
     $$('.js-city-addr').forEach(function(e){ e.textContent=c.addr; });
-    $$('.city button').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-city')===key); });
+    $$('.js-city-name').forEach(function(e){ e.textContent=c.name; });
+    $$('[data-city]').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-city')===key); });
     $$('.city-block').forEach(function(bl){ bl.classList.toggle('hl', bl.getAttribute('data-city')===key); });
+    var g=$('.geo'); if(g) g.classList.remove('open');
   }
-  $$('.city button').forEach(function(b){ b.addEventListener('click', function(){ setCity(b.getAttribute('data-city')); }); });
+  $$('[data-city]').forEach(function(b){ b.addEventListener('click', function(){ setCity(b.getAttribute('data-city')); }); });
+  var geoBtn=$('.geo__btn');
+  if(geoBtn){
+    geoBtn.addEventListener('click', function(e){ e.stopPropagation(); var g=$('.geo'); var o=g.classList.toggle('open'); geoBtn.setAttribute('aria-expanded', o?'true':'false'); });
+    document.addEventListener('click', function(){ var g=$('.geo'); if(g) g.classList.remove('open'); });
+  }
 
   /* ---- Поиск по видам (список ul[data-search]) ---- */
   var searchInput = $('#type-search');

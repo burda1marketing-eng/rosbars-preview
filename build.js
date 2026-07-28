@@ -25,7 +25,7 @@ const ic = (k, sz) => `<svg width="${sz||24}" height="${sz||24}" viewBox="0 0 24
 
 /* ---------- Навигация ---------- */
 function megaHTML() {
-  const groupsBtns = GROUPS.map((g, i) => `<button data-g="${i}"${i === 0 ? ' class="on"' : ''}>${g.name}</button>`).join('');
+  const groupsBtns = GROUPS.map((g, i) => `<a href="${g.slug}.html" data-g="${i}"${i === 0 ? ' class="on"' : ''}>${g.name}</a>`).join('');
   const panels = GROUPS.map((g, i) => {
     const links = g.items.map(name => `<a href="${svcHref(name, g.slug)}">${name}</a>`).join('');
     return `<div class="mega__panel${i === 0 ? '' : ' hide'}" data-g="${i}"><h4><a href="${g.slug}.html">${g.name}</a></h4><div class="mega__list">${links}</div></div>`;
@@ -35,17 +35,25 @@ function megaHTML() {
 }
 function header(active) {
   const items = MENU.map(m => {
-    if (m.mega) return `<li class="${active === m.href ? 'active' : ''}"><button id="mega-btn" aria-haspopup="true" aria-expanded="false">${m.t}<i class="caret"></i></button></li>`;
+    if (m.mega) return `<li class="${active === m.href ? 'active' : ''}"><button id="mega-btn" aria-haspopup="true" aria-expanded="false">${m.t}</button></li>`;
     const dd = m.sub ? `<div class="dropdown">${m.sub.map(s => `<a href="${s[1]}">${s[0]}</a>`).join('')}</div>` : '';
-    return `<li class="${active === m.href ? 'active' : ''}"><a href="${m.href}">${m.t}${m.sub ? '<i class="caret"></i>' : ''}</a>${dd}</li>`;
+    return `<li class="${active === m.href ? 'active' : ''}"><a href="${m.href}">${m.t}${m.sub ? '' : ''}</a>${dd}</li>`;
   }).join('');
   return `<header class="hdr">
-    <div class="wrap hdr__in">
-      <a class="brand" href="index.html" aria-label="${esc(SITE.name)}"><img src="assets/logo.png" width="48" height="48" alt="Печать центра"><span class="brand__txt"><span class="brand__name">Независимая экспертиза</span><span class="brand__sub">Исследовательский центр</span></span></a>
-      <nav class="menu" aria-label="Главное меню"><ul style="display:flex;gap:22px;list-style:none;margin:0;padding:0">${items}</ul></nav>
-      <div class="hdr__right">
+    <div class="hdr-util"><div class="wrap hdr-util__in">
+      <span class="hdr-util__city js-city-addr">${SITE.cities.moscow.addr}</span>
+      <div class="hdr-util__r">
         <a class="hdr__phone js-city-phone" href="tel:${SITE.phoneRaw}">${SITE.phone}</a>
-        <div class="city" role="group" aria-label="Город"><button class="on" data-city="moscow">Москва</button><button data-city="krasnodar">Краснодар</button></div>
+        <div class="geo">
+          <button class="geo__btn" aria-haspopup="true" aria-expanded="false"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 21s7-6.5 7-12a7 7 0 10-14 0c0 5.5 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/></svg><span class="geo__cur js-city-name">Москва</span><i class="geo__car"></i></button>
+          <div class="geo__menu"><button data-city="moscow" class="on">Москва</button><button data-city="krasnodar">Краснодар</button></div>
+        </div>
+      </div>
+    </div></div>
+    <div class="wrap hdr__in">
+      <a class="brand" href="index.html" aria-label="${esc(SITE.name)}"><img src="assets/logo.png" width="62" height="62" alt="Печать центра"><span class="brand__txt"><span class="brand__name">Независимая экспертиза</span><span class="brand__sub">Исследовательский центр</span></span></a>
+      <nav class="menu" aria-label="Главное меню"><ul style="display:flex;gap:16px;list-style:none;margin:0;padding:0">${items}</ul></nav>
+      <div class="hdr__right">
         <a class="btn btn--ondark" href="zayavka.html">Оставить заявку</a>
         <button class="burger" aria-label="Меню"><span></span><span></span><span></span></button>
       </div>
@@ -61,6 +69,7 @@ function mmenu() {
     return `<details><summary>${m.t}</summary>${subs}<a href="${m.href}" style="font-weight:600;color:#fff">Все: ${m.t} →</a></details>`;
   }).join('');
   return `<div id="mmenu" class="mmenu"><div class="mmenu__top"><b style="font-family:var(--display)">Меню</b><button class="mmenu__close" aria-label="Закрыть">×</button></div>
+    <div style="padding:4px 20px 12px"><div class="city" role="group" aria-label="Город"><button class="on" data-city="moscow">Москва</button><button data-city="krasnodar">Краснодар</button></div></div>
     ${blocks}
     <div class="mmenu__cta"><a class="btn btn--ondark" style="width:100%" href="zayavka.html">Оставить заявку</a>
     <p style="color:#c9cede;margin-top:14px;font-size:14px">${SITE.phone} · info@rosbars.ru</p></div></div>`;
@@ -467,6 +476,10 @@ function organizaciyaPage() {
 <section class="sec" id="docs"><div class="wrap"><div class="sec-head"><span class="eyebrow">Документы</span><h2>Лицензии, свидетельства и сертификаты</h2><p>Нажмите на документ, чтобы увеличить.</p></div>
   <div class="docs">${Array.from({length:18},(_,i)=>`<div class="doc"><img src="assets/certificates/doki_${i+1}.jpg" alt="Документ ${i+1}" loading="lazy"></div>`).join('')}</div>
 </section>
+<section class="sec" id="smi"><div class="wrap"><div class="sec-head"><span class="eyebrow">Мы в СМИ</span><h2>Эксперты центра в медиа</h2><p>Наши специалисты комментируют резонансные споры и объясняют, как экспертиза помогает в суде и досудебном урегулировании.</p></div>
+  <div class="cards">${[['ТВ · Москва 24','Апрель 2025','Как оспорить кадастровую стоимость','Эксперт-оценщик разъяснил, когда переоценка недвижимости снижает налог и как подготовить отчёт для суда.','video'],['ТВ · ТВЦ','Февраль 2025','Залив квартиры: кто виноват','Строительный эксперт — об установлении источника протечки и разграничении ответственности с УК.','video'],['РБК','Декабрь 2024','Автотехническая экспертиза после ДТП','О спорах со страховыми и о том, что даёт независимый расчёт стоимости ремонта и УТС.','video'],['Российская газета','Октябрь 2024','Почерк не обманешь','Разбор почерковедческой экспертизы в наследственных спорах и при оспаривании расписок.','read'],['Право.ру','Август 2024','Рецензия на заключение эксперта','Как рецензия помогает оспорить чужую судебную экспертизу и добиться повторной.','read'],['Коммерсантъ FM','Июнь 2024','Экспертиза в арбитраже','О роли независимой экспертизы в корпоративных и строительных спорах бизнеса.','audio']].map(m=>{var cta=m[4]==='read'?'Читать':(m[4]==='audio'?'Слушать':'Смотреть сюжет');var icon=m[4]==='read'?'<svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\"><path d=\"M6 3h9l3 3v15H6zM14 3v4h4\"/></svg>':'<svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M8 5v14l11-7z\"/></svg>';return '<article class=\"media-card\"><div class=\"media-thumb\"><span class=\"media-ic\">'+icon+'</span><span class=\"media-tag\">'+m[0]+'</span></div><div class=\"media-body\"><div class=\"meta\">'+m[1]+'</div><h4>'+m[2]+'</h4><p>'+m[3]+'</p><a class=\"arrow\" href=\"#\">'+cta+' <span class=\"a\">→</span></a></div></article>';}).join('')}</div>
+  <p class="caption muted mt-4">Материалы приведены как пример оформления блока. Реальные выступления и публикации добавим на боевом сайте.</p>
+</div></section>
 <section class="sec sec--tight" id="otzyvy" style="background:var(--white)"><div class="wrap"><div class="sec-head"><span class="eyebrow">Отзывы</span><h2>Отзывы и рекомендации</h2></div>
   <div class="cards">${[['Адвокатское бюро, Москва','Заключение по строительному спору выдержало проверку в апелляции. Эксперт чётко ответил на вопросы суда.'],['Юрдепартамент застройщика','Оперативно провели экспертизу объёмов работ, помогли обосновать позицию по контракту.'],['Частный клиент','Почерковедческая экспертиза помогла оспорить поддельную расписку. Спасибо за подробное заключение.']].map(o=>`<div class="panel"><p>«${o[1]}»</p><p class="small muted mt-4">— ${o[0]}</p></div>`).join('')}</div>
 </div></section>
@@ -502,13 +515,62 @@ function zayavkaPage() {
   const main = `<section class="sec"><div class="wrap"><div class="prose narrow"><h1>Оставить заявку</h1><p class="lead mt-4">Выберите сценарий, заполните форму — эксперт свяжется, уточнит вопросы и оценит стоимость и срок. Это демонстрационный прототип: данные не отправляются.</p></div><div class="mt-8" style="max-width:600px">${formHTML('sud')}</div></div></section>`;
   return shell({ file: 'zayavka.html', title: `Оставить заявку на экспертизу | ${SITE.name}`, desc: 'Оставьте заявку на судебную или досудебную экспертизу либо рецензию. Эксперт перезвонит и оценит стоимость и срок.', active: '', trail, main });
 }
+const INDUSTRIES = [
+  { slug:'otrasl-stroitelstvo', name:'Строительство и девелопмент', ic:'build',
+    intro:'Застройщикам, подрядчикам и заказчикам экспертиза помогает разрешать споры о качестве и объёме работ, обосновывать приёмку и защищать позицию в суде и в отношениях со страховыми.',
+    groups:['stroitelnaya-ekspertiza','ocenochnaya-ekspertiza','inzhenernaya-ekspertiza','sudebnaya-ekspertiza'],
+    situations:['Спор с подрядчиком об объёме и качестве работ','Дефекты, трещины и причины разрушений','Раздел объекта недвижимости','Проверка сметы и фактически выполненных работ'] },
+  { slug:'otrasl-energetika', name:'Энергетика', ic:'bolt',
+    intro:'Энергетическим и сетевым компаниям экспертиза нужна при спорах о технологическом присоединении, потерях в сетях, состоянии оборудования и объёмах потреблённой энергии.',
+    groups:['inzhenernaya-ekspertiza','ekspertiza-oborudovaniya','ekonomicheskaya-ekspertiza'],
+    situations:['Спор о потерях и потреблении электроэнергии','Состояние ЛЭП, сетей и подстанций','Отказ энергетического оборудования','Энергоаудит и обоснование тарифа'] },
+  { slug:'otrasl-mashinostroenie', name:'Машиностроение', ic:'gear',
+    intro:'Производственным предприятиям экспертиза помогает при спорах о качестве оборудования и продукции, причинах аварий на производстве и защите патентных прав.',
+    groups:['ekspertiza-oborudovaniya','ekspertiza-transporta','patentnaya-ekspertiza'],
+    situations:['Отказ или брак промышленного оборудования','Причины аварии на производстве','Соответствие продукции техническим требованиям','Спор о патентных правах'] },
+  { slug:'otrasl-transport', name:'Транспорт и логистика', ic:'car',
+    intro:'Транспортным и логистическим компаниям экспертиза нужна при ДТП, порче груза, спорах о состоянии техники и стоимости восстановительного ремонта.',
+    groups:['ekspertiza-transporta','ocenochnaya-ekspertiza','specialnye-ekspertizy'],
+    situations:['Обстоятельства и вина в ДТП','Порча или недостача груза','Стоимость ремонта и утрата товарной стоимости','Техническое состояние транспортного средства'] },
+  { slug:'otrasl-it', name:'Информационные технологии', ic:'chip',
+    intro:'IT-компаниям и заказчикам ПО экспертиза помогает в спорах о приёмке, качестве и работоспособности программного обеспечения, а также при защите прав на исходный код.',
+    groups:['kompyuternaya-ekspertiza','patentnaya-ekspertiza','ekonomicheskaya-ekspertiza'],
+    situations:['Спор о приёмке и качестве ПО','Работоспособность и соответствие ТЗ','Права на исходный код','Экспертиза IT-госконтракта'] },
+  { slug:'otrasl-gossektor', name:'Государственный сектор', ic:'shield',
+    intro:'Государственным заказчикам и поставщикам экспертиза нужна для подтверждения объёмов и качества по контракту, обоснования приёмки или мотивированного отказа по 44-ФЗ и 223-ФЗ.',
+    groups:['goszakupki','stroitelnaya-ekspertiza','ekonomicheskaya-ekspertiza'],
+    situations:['Обоснование отказа в приёмке','Проверка объёмов и качества по контракту','Экспертиза НМЦК','Сопровождение спора с подрядчиком'] },
+  { slug:'otrasl-zhkh', name:'ЖКХ и управление недвижимостью', ic:'build',
+    intro:'Управляющим компаниям, ТСЖ и собственникам экспертиза помогает в спорах о состоянии общего имущества, качестве коммунальных услуг и установлении виновника залива.',
+    groups:['inzhenernaya-ekspertiza','stroitelnaya-ekspertiza','ocenochnaya-ekspertiza'],
+    situations:['Установление виновника залива','Состояние общего имущества МКД','Качество коммунальных услуг','Споры с ресурсоснабжающими организациями'] },
+  { slug:'otrasl-finansy', name:'Финансовый сектор', ic:'chart',
+    intro:'Банкам, страховым и инвесторам экспертиза нужна при взыскании ущерба, оценке активов, проверке подлинности документов и в делах о банкротстве.',
+    groups:['ekonomicheskaya-ekspertiza','ocenochnaya-ekspertiza','kriminalisticheskaya-ekspertiza'],
+    situations:['Размер ущерба и задолженности','Оценка залогового имущества','Подлинность подписи и документов','Признаки преднамеренного банкротства'] }
+];
+function industryPage(ind) {
+  const trail = [{ t: 'Главная', href: 'index.html' }, { t: 'Отрасли', href: 'otrasli.html' }, { t: ind.name }];
+  const cards = ind.groups.map(slug => {
+    if (slug === 'goszakupki') return `<a class="card" href="goszakupki.html"><div class="card__ic">${ic('shield', 28)}</div><h4>Экспертиза госзакупок</h4><p>Исполнение контракта по 44-ФЗ и 223-ФЗ, объёмы и качество, приёмка, НМЦК.</p><div class="card__meta"><span>от 35 000 ₽</span><span class="a">Подробнее →</span></div></a>`;
+    const g = GROUPS.find(x => x.slug === slug); if (!g) return '';
+    return `<a class="card" href="${g.slug}.html"><div class="card__ic">${ic(g.ic, 28)}</div><h4>${g.name}</h4><p>${g.desc}</p><div class="card__meta"><span>от ${money(g.from)}</span><span class="a">Подробнее →</span></div></a>`;
+  }).join('');
+  const main = `<section class="sec"><div class="wrap"><div class="prose narrow">
+    <h1>Экспертиза для отрасли «${ind.name}»</h1>
+    <div class="answer mt-4">${ind.intro}</div></div>
+  <h2 class="mt-8">Актуальные виды экспертиз</h2>
+  <div class="cards mt-4">${cards}</div>
+  <div class="prose narrow mt-8"><h2>Типовые ситуации в отрасли</h2><ul>${li(ind.situations)}</ul></div>
+</div></section>${ctaBand()}`;
+  return shell({ file: ind.slug + '.html', title: `Экспертиза для отрасли «${ind.name}» | ${SITE.name}`, desc: `Судебная и досудебная экспертиза для отрасли «${ind.name}». Релевантные виды экспертиз и типовые споры.`, active: 'otrasli.html', trail, main });
+}
 function otraslPage() {
   const trail = [{ t: 'Главная', href: 'index.html' }, { t: 'Отрасли' }];
-  const ind = [['Строительство и девелопмент','build'],['Энергетика','bolt'],['Машиностроение','gear'],['Транспорт и логистика','car'],['Информационные технологии','chip'],['Государственный сектор','shield'],['ЖКХ и управление недвижимостью','build'],['Финансовый сектор','chart']];
-  const main = `<section class="sec"><div class="wrap"><div class="prose narrow"><h1>Экспертиза по отраслям</h1><div class="answer mt-4">Для каждой отрасли — свой набор экспертиз и типовых споров. Строительство, энергетика, машиностроение, транспорт, ИТ, госсектор, ЖКХ и финансы. Подберём вид исследования под вашу задачу.</div></div>
-  <div class="dirs mt-8">${ind.map(i=>`<article class="dir"><div class="dir__ic">${ic(i[1],28)}</div><h3>${i[0]}</h3><div class="dir__ex"><a href="ekspertizy.html">Виды экспертиз для отрасли →</a></div></article>`).join('')}</div>
+  const main = `<section class="sec"><div class="wrap"><div class="prose narrow"><h1>Экспертиза по отраслям</h1><div class="answer mt-4">Для каждой отрасли — свой набор экспертиз и типовых споров. Выберите отрасль, чтобы увидеть релевантные виды исследований и перейти к нужной экспертизе.</div></div>
+  <div class="dirs mt-8">${INDUSTRIES.map(i=>`<a class="dir" href="${i.slug}.html" style="text-decoration:none"><div class="dir__ic">${ic(i.ic,28)}</div><h3>${i.name}</h3><div class="dir__ex"><span class="arrow">Экспертизы для отрасли <span class="a">→</span></span></div></a>`).join('')}</div>
 </div></section>${ctaBand()}`;
-  return shell({ file: 'otrasli.html', title: `Экспертиза по отраслям | ${SITE.name}`, desc: 'Экспертизы по отраслям: строительство, энергетика, машиностроение, транспорт, ИТ, госсектор, ЖКХ, финансы.', active: 'otrasli.html', trail, main });
+  return shell({ file: 'otrasli.html', title: `Экспертиза по отраслям | ${SITE.name}`, desc: 'Экспертизы по отраслям: строительство, энергетика, машиностроение, транспорт, ИТ, госсектор, ЖКХ, финансы. Релевантные виды экспертиз для каждой отрасли.', active: 'otrasli.html', trail, main });
 }
 
 /* FAQ страница */
@@ -607,6 +669,7 @@ PAGES.push({ f: 'karta-sayta.html', h: kartaSaytaPage() });
 PAGES.push({ f: 'prichiny-zaliva.html', h: zalivPage() });
 GROUPS.forEach(g => PAGES.push({ f: g.slug + '.html', h: pillarPage(g) }));
 STANDALONE_SVC.forEach(s => PAGES.push({ f: s.file, h: servicePage(s) }));
+INDUSTRIES.forEach(ind => PAGES.push({ f: ind.slug + '.html', h: industryPage(ind) }));
 
 // удалить старые страницы прошлой сборки
 ['uslugi.html','o-tsentre.html','uslugi-stroitelnaya.html','uslugi-pocherkovedcheskaya.html','uslugi-ocenochnaya.html','uslugi-avtotehnicheskaya.html','uslugi-tovarovedcheskaya.html','uslugi-ekonomicheskaya.html','uslugi-zemleustroitelnaya.html','uslugi-pozharno-tehnicheskaya.html'].forEach(f=>{try{fs.unlinkSync(OUT+'/'+f);}catch(e){}});

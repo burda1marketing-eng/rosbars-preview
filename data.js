@@ -71,7 +71,7 @@ const MENU = [
   { t:'Организация', href:'organizaciya.html', sub:[
     ['Об организации','organizaciya.html'],['Эксперты','organizaciya.html#eksperty'],['Отзывы и рекомендации','organizaciya.html#otzyvy'],
     ['Лицензии и аккредитация','organizaciya.html#docs'],['Обучение','organizaciya.html#obuchenie'],['Кейсы','keysy.html'],
-    ['Для СМИ','organizaciya.html#smi'],['Реквизиты','kontakty.html#rekvizity'],['Вакансии','organizaciya.html#vakansii'] ] },
+    ['Мы в СМИ','organizaciya.html#smi'],['Реквизиты','kontakty.html#rekvizity'],['Вакансии','organizaciya.html#vakansii'] ] },
   { t:'Экспертизы', href:'ekspertizy.html', mega:true },
   { t:'Госзакупки', href:'goszakupki.html', sub:[
     ['Исполнение госконтракта (44-ФЗ / 223-ФЗ)','goszakupki.html'],['Объёмы и качество работ по контракту','goszakupki.html'],
@@ -81,8 +81,8 @@ const MENU = [
     ['Рецензия на заключение эксперта','recenzii.html'],['На строительно-техническую','recenzii.html'],['На оценочную','recenzii.html'],
     ['На почерковедческую','recenzii.html'],['На автотехническую','recenzii.html'],['На инженерно-техническую','recenzii.html'],['На судебно-медицинскую','recenzii.html'] ] },
   { t:'Отрасли', href:'otrasli.html', sub:[
-    ['Строительство и девелопмент','otrasli.html'],['Энергетика','otrasli.html'],['Машиностроение','otrasli.html'],['Транспорт и логистика','otrasli.html'],
-    ['Информационные технологии','otrasli.html'],['Государственный сектор','otrasli.html'],['ЖКХ и управление недвижимостью','otrasli.html'],['Финансовый сектор','otrasli.html'] ] },
+    ['Строительство и девелопмент','otrasl-stroitelstvo.html'],['Энергетика','otrasl-energetika.html'],['Машиностроение','otrasl-mashinostroenie.html'],['Транспорт и логистика','otrasl-transport.html'],
+    ['Информационные технологии','otrasl-it.html'],['Государственный сектор','otrasl-gossektor.html'],['ЖКХ и управление недвижимостью','otrasl-zhkh.html'],['Финансовый сектор','otrasl-finansy.html'] ] },
   { t:'Контакты', href:'kontakty.html', sub:[
     ['Москва','kontakty.html'],['Краснодар','kontakty.html'],['Реквизиты','kontakty.html#rekvizity'] ] }
 ];
