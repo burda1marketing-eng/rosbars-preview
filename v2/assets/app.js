@@ -168,6 +168,8 @@
     var m=$('#req-modal'); if(!m) return;
     function open(scenario,vid){
       m.hidden=false; document.body.style.overflow='hidden';
+      // если открыт AI-помощник — свернуть его, чтобы модалка была на первом плане
+      var hp=document.querySelector('.hlp-panel.open'); if(hp){ hp.classList.remove('open'); var hf=document.querySelector('.hlp-fab'); if(hf) hf.style.display='flex'; }
       var f=m.querySelector('form');
       if(f&&scenario){ var tb=f.querySelector('.form-tab[data-scenario="'+scenario+'"]'); if(tb) tb.click(); }
       if(f&&vid){ var sel=f.querySelector('.js-vid'); if(sel){ for(var i=0;i<sel.options.length;i++){ if((sel.options[i].text||'').indexOf(vid)!==-1){ sel.selectedIndex=i; break; } } } }
@@ -185,6 +187,22 @@
       var p=new URLSearchParams(qs);
       var mm=$('#mmenu'); if(mm){ mm.classList.remove('open'); }
       open(p.get('scenario'), p.get('vid')?decodeURIComponent(p.get('vid')):'');
+    });
+    window.__openReqModal = open; // чтобы AI-помощник мог открыть модалку заявки
+  })();
+
+  /* ---- Баннер согласия на cookie (152-ФЗ): показываем при первом визите ---- */
+  (function(){
+    var cb=$('#cookie-banner'); if(!cb) return;
+    var has=document.cookie.split('; ').some(function(r){ return r.indexOf('rb_cookie=')===0; });
+    if(has) return; // выбор уже сделан
+    cb.hidden=false;
+    $$('[data-cookie]',cb).forEach(function(b){
+      b.addEventListener('click',function(){
+        var v = b.getAttribute('data-cookie')==='accept' ? 'all' : 'necessary';
+        document.cookie='rb_cookie='+v+'; path=/; max-age=31536000; samesite=lax';
+        cb.hidden=true;
+      });
     });
   })();
 
@@ -234,11 +252,11 @@
         {t:'Почерковедческая (подпись)', go:'sud_poch'},
         {t:'Другое направление', go:'sud_other'}
       ]},
-    sud_str:{ m:'Строительная экспертиза — от 25 000 ₽, срок от 5 рабочих дней. Например, «Экспертиза причин залива». Открыть страницу или сразу оставить заявку?',
+    sud_str:{ m:'Строительная экспертиза: качество и объём работ, дефекты, причины залива, обследование зданий. Например, «Экспертиза причин залива». Открыть страницу или сразу оставить заявку?',
       o:[{t:'Открыть «Причины залива»', link:'prichiny-zaliva.html'},{t:'Все строительные виды', link:'stroitelnaya-ekspertiza.html'},{t:'Оставить заявку', link:'zayavka.html?scenario=sud'}]},
-    sud_oc:{ m:'Оценочная экспертиза — от 8 000 ₽, срок от 3 рабочих дней. Определяем стоимость и размер ущерба.',
+    sud_oc:{ m:'Оценочная экспертиза: определяем рыночную стоимость и размер ущерба. Точную стоимость и срок эксперт назовёт после изучения задачи.',
       o:[{t:'Открыть раздел «Оценочная»', link:'ekspertizy.html'},{t:'Оставить заявку', link:'zayavka.html?scenario=sud'}]},
-    sud_poch:{ m:'Почерковедческая экспертиза — от 15 000 ₽, срок 5–10 дней. Устанавливаем исполнителя подписи.',
+    sud_poch:{ m:'Почерковедческая экспертиза: устанавливаем исполнителя подписи или записи и факт подделки. Срок обычно 5–10 рабочих дней.',
       o:[{t:'Оставить заявку', link:'zayavka.html?scenario=sud'},{t:'Все виды экспертиз', link:'ekspertizy.html'}]},
     sud_other:{ m:'Направлений больше 60 — они собраны в каталоге. Подобрать вид удобно там, либо оставьте заявку и эксперт поможет с формулировкой.',
       o:[{t:'Каталог экспертиз', link:'ekspertizy.html'},{t:'Оставить заявку', link:'zayavka.html?scenario=sud'}]},
@@ -311,7 +329,12 @@
         var b=document.createElement('button');b.className='hlp-opt';b.textContent=o.t;b.style.animationDelay=(idx*60)+'ms';
         b.addEventListener('click',function(){
           user(o.t);
-          if(o.link){ bot('Открываю: <a href="'+U+o.link+'">'+esc(o.t)+'</a>'); setTimeout(function(){location.href=U+o.link;},650); }
+          if(o.link && /zayavka\.html/.test(o.link) && window.__openReqModal){
+            // заявка → открываем МОДАЛКУ прямо здесь, без перехода на страницу формы
+            var pr=new URLSearchParams(o.link.split('?')[1]||'');
+            bot('Открываю форму заявки — заполните, и эксперт перезвонит.');
+            setTimeout(function(){ window.__openReqModal(pr.get('scenario')||'', pr.get('vid')?decodeURIComponent(pr.get('vid')):''); }, 600);
+          } else if(o.link){ bot('Открываю: <a href="'+U+o.link+'">'+esc(o.t)+'</a>'); setTimeout(function(){location.href=U+o.link;},650); }
           else if(o.go){ go(o.go); }
         });
         w.appendChild(b);
@@ -394,6 +417,18 @@
       // красный акцент-«засечка» у надзаголовков
       +'.eyebrow::before{content:"";display:inline-block;width:20px;height:2px;background:#D64550;border-radius:2px;margin-right:8px;vertical-align:middle}'
       +'.sec--dark .eyebrow::before{background:#FF6B6B}'
+      // отступы: заголовки не должны липнуть к следующему тексту/блокам
+      +'.prose h2{margin-bottom:22px}.prose h3{margin-bottom:14px}'
+      +'h2 + .faq,h2 + .cards,h2 + .experts,h2 + .steps,h2 + .grid-2,h2 + .grid-3,h2 + .docs,h2 + .tbl-wrap,h2 + .tbl-tools,h3 + .cards,h3 + .faq{margin-top:24px}'
+      +'.answer + .prose,.answer + h2,.prose + h2{margin-top:36px}'
+      // баннер согласия на cookie (цвета из темы)
+      +'.cookie-banner{position:fixed;left:16px;right:16px;bottom:16px;z-index:130;max-width:620px;margin-inline:auto;background:var(--white);border:1px solid var(--shellstone);border-radius:14px;box-shadow:0 16px 46px rgba(6,36,59,.22);padding:18px 20px;display:flex;align-items:center;gap:18px;flex-wrap:wrap}'
+      +'.cookie-banner[hidden]{display:none}'
+      +'.cookie-banner__t{flex:1;min-width:250px;font-size:13.5px;line-height:1.5;color:var(--ink)}'
+      +'.cookie-banner__t a{color:var(--seal-blue);text-decoration:underline}'
+      +'.cookie-banner__act{display:flex;gap:10px;flex-wrap:wrap}'
+      +'.cookie-banner .btn{height:42px;min-height:42px;font-size:14px;padding:0 18px}'
+      +'@media(max-width:560px){.cookie-banner{flex-direction:column;align-items:stretch;gap:12px}.cookie-banner__act{width:100%}.cookie-banner__act .btn{flex:1}}'
       // шапка: верхняя плашка сворачивается плавно. overflow:hidden ТОЛЬКО при сжатии,
       // иначе он обрезает выпадашку выбора города (Москва/Краснодар).
       +'.hdr-util{max-height:64px;transition:max-height .4s '+EASE+',opacity .3s ease}'
