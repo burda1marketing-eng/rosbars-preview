@@ -444,7 +444,7 @@
       // блок «Член ТПП» — цвета/радиус/тень из темы, эмблема перекрашивается под бренд
       +'.member{display:flex;align-items:center;gap:22px;flex-wrap:wrap;background:var(--white);border:1px solid var(--shellstone);border-radius:var(--r);box-shadow:var(--shadow-1);padding:20px 26px}'
       +'.member__emblem{flex-shrink:0;line-height:0}'
-      +'.member__logo{height:66px;width:auto;display:block}'
+      +'.member__logo{height:79px;width:auto;display:block}'
       +'.member__txt{flex:1;min-width:240px}'
       +'.member__txt b{display:block;color:var(--royal-blue);font-size:1.06rem;line-height:1.3;letter-spacing:-.01em}'
       +'.member__txt span{display:block;color:var(--ink-muted);font-size:13.5px;margin-top:5px;line-height:1.45}'
