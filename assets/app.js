@@ -206,6 +206,18 @@
     });
   })();
 
+  /* ---- Карточки-направления (.dir): клик по всей карточке → материнский листинг,
+     клик по конкретной ссылке-услуге внутри работает как обычно ---- */
+  $$('.dir').forEach(function(card){
+    var main = card.querySelector('h3 a'); if(!main) return;
+    card.style.cursor='pointer';
+    card.addEventListener('click', function(e){
+      if(e.target.closest('a')) return;              // клик по любой ссылке (заголовок/услуга) — не перехватываем
+      if(String(window.getSelection())) return;      // не мешаем выделению текста
+      window.location.href = main.getAttribute('href');
+    });
+  });
+
   /* ---- FAQ: один открыт, первый по умолчанию ---- */
   $$('.faq').forEach(function(faq){
     var items = $$('details', faq);
