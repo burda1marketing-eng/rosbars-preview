@@ -201,6 +201,14 @@ function homePage() {
   <div><div class="stat__n tnum">60+</div><div class="stat__l">видов экспертиз</div></div>
 </div></div></section>
 
+<section class="sec--tight" style="padding-top:0"><div class="wrap">
+  <div class="member">
+    <span class="member__emblem"><svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="32" cy="32" r="29"/><circle cx="32" cy="32" r="23.5" stroke-width="1.2"/><path d="M17.5 29.5 32 20.5 46.5 29.5"/><path d="M20 30H44"/><path d="M23 31.5V41M29 31.5V41M35 31.5V41M41 31.5V41"/><path d="M21 44H43"/><path d="M23 41H41"/></svg></span>
+    <div class="member__txt"><b>Член Торгово-промышленной палаты города Москвы</b><span>Действительный член с 2014 года · официальное подтверждение членства предоставляется по запросу</span></div>
+    <a class="member__cta arrow" href="organizaciya.html">Об организации <span class="a">→</span></a>
+  </div>
+</div></section>
+
 <section class="sec"><div class="wrap">
   <div class="sec-head"><span class="eyebrow">Направления</span><h2>Экспертизы по группам</h2><p>11 департаментов, более 60 видов. Строительная экспертиза — флагманское направление.</p></div>
   <div class="dirs">${dirsCards()}</div>
