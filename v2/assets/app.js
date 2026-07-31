@@ -450,6 +450,34 @@
       +'.member__txt span{display:block;color:var(--ink-muted);font-size:13.5px;margin-top:5px;line-height:1.45}'
       +'.member__cta{flex-shrink:0;white-space:nowrap}'
       +'@media(max-width:640px){.member{gap:16px;padding:18px 20px}.member__cta{width:100%}}'
+      // --- Медиа-слой (Дизайны 1 и 3; в Дизайне 2 скрыт через [data-media]) ---
+      // герой: структура (скрим — в темах)
+      +'.hero{position:relative;overflow:hidden}'
+      +'.hero__media{position:absolute;inset:0;z-index:0}'
+      +'.hero__media video{width:100%;height:100%;object-fit:cover;display:block}'
+      +'.hero .wrap{position:relative;z-index:2}'
+      // баннер страниц
+      +'.pagebanner{position:relative;height:clamp(148px,19vw,214px);overflow:hidden;display:flex;align-items:flex-end}'
+      +'.pagebanner__bg{position:absolute;inset:0;background-size:cover;background-position:center 32%}'
+      +'.pagebanner::after{content:"";position:absolute;inset:0;background:linear-gradient(to top,rgba(6,17,40,.9),rgba(6,17,40,.42) 58%,rgba(6,17,40,.32))}'
+      +'.pagebanner .wrap{position:relative;z-index:1;width:100%;padding-bottom:20px}'
+      +'.pagebanner__label{font-family:var(--display);font-weight:700;color:#fff;font-size:clamp(1.5rem,3.2vw,2.35rem);letter-spacing:-.01em;text-shadow:0 2px 22px rgba(0,0,0,.4)}'
+      // полоса «масштаб»
+      +'.scaleband{position:relative;overflow:hidden;padding:clamp(60px,9vw,116px) 0;color:#fff}'
+      +'.scaleband__bg{position:absolute;inset:0;background-size:cover;background-position:center 28%}'
+      +'.scaleband::after{content:"";position:absolute;inset:0;background:linear-gradient(105deg,rgba(6,17,40,.92) 0%,rgba(6,17,40,.78) 46%,rgba(6,17,40,.5) 100%)}'
+      +'.scaleband__in{position:relative;z-index:1;max-width:730px}'
+      +'.scaleband .eyebrow{color:#9db4d8}.scaleband .eyebrow::before{background:#E5484D}'
+      +'.scaleband__h{font-family:var(--display);color:#fff;font-size:clamp(1.9rem,3.4vw,2.9rem);line-height:1.12;margin-top:12px}'
+      +'.scaleband__p{color:#d6deee;font-size:1.12rem;line-height:1.55;margin-top:16px}'
+      +'.scaleband .btn--primary{background:#fff;color:#0a1836;border-color:#fff}.scaleband .btn--primary:hover{background:#e7ecf5;border-color:#e7ecf5}'
+      // «эксперты за работой»
+      +'.expmedia-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}'
+      +'.expmedia{margin:0;position:relative;border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow-1)}'
+      +'.expmedia__img{aspect-ratio:16/10;background-size:cover;background-position:center;transition:transform .6s cubic-bezier(.16,1,.3,1)}'
+      +'.expmedia:hover .expmedia__img{transform:scale(1.05)}'
+      +'.expmedia__cap{position:absolute;left:0;right:0;bottom:0;padding:44px 20px 16px;color:#fff;font-weight:600;font-size:15px;line-height:1.35;background:linear-gradient(to top,rgba(6,17,40,.92),rgba(6,17,40,.5) 55%,transparent)}'
+      +'@media(max-width:700px){.expmedia-grid{grid-template-columns:1fr}}'
       // шапка: верхняя плашка сворачивается плавно. overflow:hidden ТОЛЬКО при сжатии,
       // иначе он обрезает выпадашку выбора города (Москва/Краснодар).
       +'.hdr-util{max-height:64px;transition:max-height .4s '+EASE+',opacity .3s ease}'

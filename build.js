@@ -14,6 +14,24 @@ const stripPrice = require('./strip.js');
 const li = a => a.map(x => '<li>' + x + '</li>').join('');
 const PROTO = 'Прототип. Демонстрационная версия, не является действующим сайтом';
 
+/* Медиа для Дизайнов 1 и 3 (свободный сток Pexels; временные заглушки под будущую генерацию Higgsfield).
+   В Дизайне 2 (monday) скрыто через CSS. */
+const MEDIA = {
+  heroImg: 'https://images.pexels.com/photos/14354493/pexels-photo-14354493.jpeg?auto=compress&cs=tinysrgb&w=1920',
+  heroVideo: 'https://videos.pexels.com/video-files/11649490/11649490-sd_960_540_24fps.mp4',
+  scaleImg: 'https://images.pexels.com/photos/30396647/pexels-photo-30396647.jpeg?auto=compress&cs=tinysrgb&w=1920',
+  bannerImg: 'https://images.pexels.com/photos/18078304/pexels-photo-18078304.jpeg?auto=compress&cs=tinysrgb&w=1600',
+  experts: [
+    { img: 'https://images.pexels.com/photos/6285138/pexels-photo-6285138.jpeg?auto=compress&cs=tinysrgb&w=900', cap: 'Инженерно-техническое обследование и проектная экспертиза' },
+    { img: 'https://images.pexels.com/photos/4872040/pexels-photo-4872040.jpeg?auto=compress&cs=tinysrgb&w=900', cap: 'Строительная экспертиза: обмеры, дефекты, сметная стоимость' }
+  ]
+};
+function pageBanner(trail){
+  if(!trail || trail.length < 2) return '';
+  const label = (trail[1] && trail[1].t) ? trail[1].t : 'Независимая экспертиза';
+  return `<div class="pagebanner" data-media><div class="pagebanner__bg" style="background-image:url('${MEDIA.bannerImg}')"></div><div class="wrap pagebanner__in"><span class="pagebanner__label">${esc(label)}</span></div></div>`;
+}
+
 const ICONS = {
   build:'M4 21V8l8-5 8 5v13M9 21v-6h6v6M4 12h16', gavel:'M14 4l6 6-3 3-6-6zM11 9l-7 7 3 3 7-7M14 20h6',
   pen:'M4 20c3-1 5-3 9-9l2 2c-6 6-8 8-9 9zM14 6l3-3 3 3-3 3', coins:'M12 4a8 8 0 100 16 8 8 0 000-16M12 8v8M9.5 10c0-1 1-1.6 2.5-1.6s2.5.8 2.5 1.7c0 2.2-5 1.2-5 3.4 0 .9 1 1.6 2.5 1.6s2.5-.7 2.5-1.7',
@@ -151,7 +169,7 @@ function shell(o) {
 </head><body>
 ${header(o.active || '')}
 ${mmenu()}
-${o.trail ? crumbs(o.trail) : ''}
+${o.trail ? pageBanner(o.trail) : ''}${o.trail ? crumbs(o.trail) : ''}
 <main id="main">${o.main}</main>
 ${footer()}
 ${modalHTML()}
@@ -184,7 +202,7 @@ function homePage() {
   const priceRows = PRICES.slice(0, 9).map(p => `<tr data-name="${esc(p[0])}" data-group="${p[1]}"><th scope="row" data-l="Вид"><a href="${p[4]}">${p[0]}</a></th><td class="num" data-l="Стоимость">от ${money(p[2])}</td><td data-l="Срок">${p[3]} дн.</td></tr>`).join('');
   const cases = [['Арбитражный суд г. Москвы', 'А40-1234/2025', 'Март 2025', 'Спор о качестве фасадных работ на 1 240 м². Обмеры и поверочные расчёты выявили завышение объёмов.', 'Строительная'], ['Никулинский районный суд', '2-567/2025', 'Февраль 2025', 'Оспаривание подписи в договоре займа на 4,5 млн ₽ по почерковедческому исследованию.', 'Криминалистическая'], ['Краснодарский краевой суд', 'А32-890/2025', 'Январь 2025', 'Реконструкция обстоятельств ДТП по следам и повреждениям при противоречивых показаниях.', 'Транспорт']];
   const main = `
-<section class="hero"><div class="wrap"><div class="hero__in">
+<section class="hero"><div class="hero__media" data-media><video class="hero__video" autoplay muted loop playsinline preload="metadata" poster="${MEDIA.heroImg}"><source src="${MEDIA.heroVideo}" type="video/mp4"></video></div><div class="wrap"><div class="hero__in">
   <span class="eyebrow" style="color:var(--periwinkle)">АНО · Член ТПП г. Москвы · с 2014 года</span>
   <h1 class="display" style="margin-top:14px">Независимая экспертиза для суда и досудебного урегулирования</h1>
   <p class="hero__sub">Судебные и досудебные экспертизы по 60+ направлениям. Готовим заключения, которые выдерживают проверку в суде. Москва и Краснодар, работаем по всей России.</p>
@@ -213,6 +231,18 @@ function homePage() {
   <div class="sec-head"><span class="eyebrow">Направления</span><h2>Экспертизы по группам</h2><p>11 департаментов, более 60 видов. Строительная экспертиза — флагманское направление.</p></div>
   <div class="dirs">${dirsCards()}</div>
   <p class="mt-6"><a class="arrow" href="ekspertizy.html">Все виды экспертиз <span class="a">→</span></a></p>
+</div></section>
+
+<section class="scaleband" data-media><div class="scaleband__bg" style="background-image:url('${MEDIA.scaleImg}')"></div><div class="wrap scaleband__in">
+  <span class="eyebrow">Масштаб и сложность</span>
+  <h2 class="scaleband__h">Экспертиза объектов любой сложности</h2>
+  <p class="scaleband__p">От многоквартирных домов и промышленных зданий до инженерных систем, ЛЭП, энергообъектов, транспорта и сложного оборудования. Фиксируем факты и готовим заключения, которые выдерживают проверку в суде.</p>
+  <a class="btn btn--primary btn--lg mt-6" href="ekspertizy.html">Все направления экспертиз</a>
+</div></section>
+
+<section class="sec" data-media><div class="wrap">
+  <div class="sec-head"><span class="eyebrow">Как мы работаем</span><h2>Эксперты за работой</h2><p>Выезд на объект, инструментальные обследования, лабораторные и камеральные исследования — по строительным, инженерным, оценочным, криминалистическим и другим направлениям.</p></div>
+  <div class="expmedia-grid">${MEDIA.experts.map(e => `<figure class="expmedia"><div class="expmedia__img" style="background-image:url('${e.img}')"></div><figcaption class="expmedia__cap">${e.cap}</figcaption></figure>`).join('')}</div>
 </div></section>
 
 <section class="sec sec--dark"><div class="wrap">
