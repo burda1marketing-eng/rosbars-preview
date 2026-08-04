@@ -428,3 +428,4 @@ table.price .num{text-align:right;font-variant-numeric:tabular-nums;font-weight:
 @media (max-width:400px){.brand__sub{display:none}}
 /* Медиа (фото/видео) — только в Дизайнах 1 и 3; в monday скрыто */
 [data-media]{display:none!important}
+.member__emblem .emb{display:none}.member__emblem .emb--monday{display:block}

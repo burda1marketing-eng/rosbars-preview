@@ -168,6 +168,7 @@ ul,ol{margin:0;padding:0;list-style:none}
 /* Hero */
 .hero{background:#fff;position:relative;overflow:hidden;border-bottom:1px solid var(--shellstone)}
 .hero__media::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,rgba(255,255,255,.97) 0%,rgba(255,255,255,.9) 40%,rgba(255,255,255,.55) 72%,rgba(255,255,255,.3) 100%)}
+.member__emblem .emb{display:none}.member__emblem .emb--light{display:block}
 .hero__seal{position:absolute;right:-30px;top:50%;transform:translateY(-50%);width:440px;opacity:.05;pointer-events:none}
 .hero__in{padding:clamp(48px,7vw,96px) 0;position:relative;max-width:900px}
 .hero h1,.hero .display{color:var(--royal-blue)}
