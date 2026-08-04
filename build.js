@@ -221,7 +221,7 @@ function homePage() {
 
 <section class="sec--tight" style="padding-top:0"><div class="wrap">
   <div class="member">
-    <span class="member__emblem"><img class="member__logo" src="assets/tpp-moscow.jpg" alt="Член Московской торгово-промышленной палаты" width="74" height="79" loading="lazy"></span>
+    <span class="member__emblem" role="img" aria-label="Член Московской торгово-промышленной палаты"><svg class="member__check" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="32" cy="32" r="27" stroke-width="2.4"/><path d="M20.5 33.5l7.8 7.8L44 24.5"/></svg></span>
     <div class="member__txt"><b>Член Торгово-промышленной палаты города Москвы</b><span>Действительный член с 2014 года · официальное подтверждение членства предоставляется по запросу</span></div>
     <a class="member__cta arrow" href="organizaciya.html">Об организации <span class="a">→</span></a>
   </div>
